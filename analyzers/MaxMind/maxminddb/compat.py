@@ -20,9 +20,7 @@ if is_py2:
     FileNotFoundError = IOError
 
     def int_from_bytes(b):
-        if b:
-            return int(b.encode("hex"), 16)
-        return 0
+        return int(b.encode("hex"), 16) if b else 0
 
     byte_from_int = chr
 

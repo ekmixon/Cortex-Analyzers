@@ -19,7 +19,10 @@ class SafebrowsingClient:
     def __init__(self, key, client_id, client_version='0.1'):
         self.api_key = key
         self.session = requests.Session()
-        self.url = 'https://safebrowsing.googleapis.com/v4/threatMatches:find?key={}'.format(key)
+        self.url = (
+            f'https://safebrowsing.googleapis.com/v4/threatMatches:find?key={key}'
+        )
+
         self.client_id = client_id
         self.client_version = client_version
 

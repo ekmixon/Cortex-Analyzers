@@ -36,23 +36,21 @@ class DomainToolsAnalyzer(Analyzer):
     def get_threat_level(risk_score):
         level = "info"
         if risk_score <= 65:
-            level = "safe"
+            return "safe"
         elif 65 < risk_score <= 80:
-            level = "suspicious"
-        elif risk_score > 80:
-            level = "malicious"
-        return level
+            return "suspicious"
+        else:
+            return "malicious"
 
     @staticmethod
     def get_threat_level_class(risk_score):
         level = ""
         if risk_score <= 65:
-            level = "label-success"
+            return "label-success"
         elif 65 < risk_score <= 80:
-            level = "label-warning"
-        elif risk_score > 80:
-            level = "label-danger"
-        return level
+            return "label-warning"
+        else:
+            return "label-danger"
 
     def add_pivot_class(self, data_obj):
         """
@@ -62,23 +60,18 @@ class DomainToolsAnalyzer(Analyzer):
         """
         if isinstance(data_obj, dict) and len(data_obj):
             for k, v in data_obj.items():
-                if isinstance(data_obj[k], dict) or isinstance(data_obj[k], list):
+                if isinstance(data_obj[k], (dict, list)):
                     self.add_pivot_class(data_obj[k])
-            if "count" in data_obj and (
-                0 < data_obj["count"] < self.pivot_count_threshold
-            ):
-                data_obj["class"] = "label-danger"
-            elif "count" in data_obj and data_obj["count"] == 0:
-                del data_obj["count"]
-            elif (
-                "count" in data_obj
-                and "class" not in data_obj
-                and data_obj["count"] != 0
-            ):
-                data_obj["class"] = "label-info"
+            if "count" in data_obj:
+                if 0 < data_obj["count"] < self.pivot_count_threshold:
+                    data_obj["class"] = "label-danger"
+                elif data_obj["count"] == 0:
+                    del data_obj["count"]
+                elif "class" not in data_obj:
+                    data_obj["class"] = "label-info"
 
         elif isinstance(data_obj, list) and len(data_obj):
-            for index, item in enumerate(data_obj):
+            for item in data_obj:
                 self.add_pivot_class(item)
 
     @staticmethod
@@ -91,11 +84,14 @@ class DomainToolsAnalyzer(Analyzer):
 
         Returns: Either the component that we asked for or None
         """
-        for component in components:
-            if component.get("name") == threat_type:
-                return component
-        else:
-            return None
+        return next(
+            (
+                component
+                for component in components
+                if component.get("name") == threat_type
+            ),
+            None,
+        )
 
     def format_single_domain(self, domain_data):
         domain_data["last_enriched"] = datetime.now().date().strftime("%m-%d-%Y")
@@ -111,8 +107,7 @@ class DomainToolsAnalyzer(Analyzer):
             "value": overall_risk_score,
             "class": DomainToolsAnalyzer.get_threat_level_class(overall_risk_score),
         }
-        risk_components = domain_risk.get("components", {})
-        if risk_components:
+        if risk_components := domain_risk.get("components", {}):
             proximity_data = DomainToolsAnalyzer.get_threat_component(
                 risk_components, "proximity"
             )
@@ -129,10 +124,9 @@ class DomainToolsAnalyzer(Analyzer):
             ] = DomainToolsAnalyzer.get_threat_level_class(
                 domain_risk["proximity"]["value"]
             )
-            threat_profile_data = DomainToolsAnalyzer.get_threat_component(
+            if threat_profile_data := DomainToolsAnalyzer.get_threat_component(
                 risk_components, "threat_profile"
-            )
-            if threat_profile_data:
+            ):
                 domain_risk["tp"] = {}
                 domain_risk["tp"]["value"] = threat_profile_data.get("risk_score", 0)
                 domain_risk["tp"]["class"] = DomainToolsAnalyzer.get_threat_level_class(
@@ -140,10 +134,9 @@ class DomainToolsAnalyzer(Analyzer):
                 )
                 domain_risk["tp"]["threats"] = threat_profile_data.get("threats", [])
                 domain_risk["tp"]["evidence"] = threat_profile_data.get("evidence", [])
-            threat_profile_malware_data = DomainToolsAnalyzer.get_threat_component(
+            if threat_profile_malware_data := DomainToolsAnalyzer.get_threat_component(
                 risk_components, "threat_profile_malware"
-            )
-            if threat_profile_malware_data:
+            ):
                 domain_risk["tpm"] = {}
                 domain_risk["tpm"]["value"] = threat_profile_malware_data.get(
                     "risk_score", 0
@@ -153,10 +146,9 @@ class DomainToolsAnalyzer(Analyzer):
                 ] = DomainToolsAnalyzer.get_threat_level_class(
                     domain_risk["tpm"]["value"]
                 )
-            threat_profile_phishing_data = DomainToolsAnalyzer.get_threat_component(
+            if threat_profile_phishing_data := DomainToolsAnalyzer.get_threat_component(
                 risk_components, "threat_profile_phishing"
-            )
-            if threat_profile_phishing_data:
+            ):
                 domain_risk["tpp"] = {}
                 domain_risk["tpp"]["value"] = threat_profile_phishing_data.get(
                     "risk_score", 0
@@ -166,10 +158,9 @@ class DomainToolsAnalyzer(Analyzer):
                 ] = DomainToolsAnalyzer.get_threat_level_class(
                     domain_risk["tpp"]["value"]
                 )
-            threat_profile_spam_data = DomainToolsAnalyzer.get_threat_component(
+            if threat_profile_spam_data := DomainToolsAnalyzer.get_threat_component(
                 risk_components, "threat_profile_spam"
-            )
-            if threat_profile_spam_data:
+            ):
                 domain_risk["tps"] = {}
                 domain_risk["tps"]["value"] = threat_profile_spam_data.get(
                     "risk_score", 0
@@ -190,7 +181,7 @@ class DomainToolsAnalyzer(Analyzer):
         domain_data["contacts"] = []
         for c in domain_data["types"]:
             split_type = c.split("_")
-            domain_data[c]["type"] = "{} Contact".format(split_type[0].capitalize())
+            domain_data[c]["type"] = f"{split_type[0].capitalize()} Contact"
             domain_data["contacts"].append(domain_data[c])
 
         self.add_pivot_class(domain_data)
@@ -200,9 +191,10 @@ class DomainToolsAnalyzer(Analyzer):
     def format_pivot_domains(domains, artifact_type, artifact_data):
         result = {
             "last_enriched": datetime.now().date().strftime("%m-%d-%Y"),
-            "pivot_artifact": "{} = {}".format(artifact_type.upper(), artifact_data),
+            "pivot_artifact": f"{artifact_type.upper()} = {artifact_data}",
             "average_risk_score": 0,
         }
+
         total_risk_score = 0
         sorted_domains = sorted(
             domains,
@@ -221,8 +213,7 @@ class DomainToolsAnalyzer(Analyzer):
                 "class": DomainToolsAnalyzer.get_threat_level_class(risk_score),
                 "risk_score": risk_score,
             }
-            create_date = domain.get("create_date", {}).get("value", "")
-            if create_date:
+            if create_date := domain.get("create_date", {}).get("value", ""):
                 temp_dict["domain_age"] = DomainToolsAnalyzer.get_domain_age(
                     create_date
                 )
@@ -271,10 +262,9 @@ class DomainToolsAnalyzer(Analyzer):
                 risk_score = raw["domain_risk"]["overall"]["value"]
                 level = self.get_threat_level(risk_score)
                 taxonomies.append(
-                    self.build_taxonomy(
-                        level, "DT", "Risk Score", "{}".format(risk_score)
-                    )
+                    self.build_taxonomy(level, "DT", "Risk Score", f"{risk_score}")
                 )
+
             else:
                 taxonomies.append(
                     self.build_taxonomy("info", "DT", "Risk Score", "No Risk Score")
@@ -285,33 +275,25 @@ class DomainToolsAnalyzer(Analyzer):
                 level = self.get_threat_level(risk_score)
                 taxonomies.append(
                     self.build_taxonomy(
-                        level, "DT", "Threat Profile Score", "{}".format(risk_score)
+                        level, "DT", "Threat Profile Score", f"{risk_score}"
                     )
                 )
-                evidence = ",".join(raw["domain_risk"]["tp"]["evidence"])
-                if evidence:
-                    taxonomies.append(
-                        self.build_taxonomy(
-                            "info", "DT", "Evidence", "{}".format(evidence)
-                        )
-                    )
+
+                if evidence := ",".join(raw["domain_risk"]["tp"]["evidence"]):
+                    taxonomies.append(self.build_taxonomy("info", "DT", "Evidence", f"{evidence}"))
             else:
                 taxonomies.append(
                     self.build_taxonomy(
                         "info", "DT", "Threat Profile Score", "No Threat Profile Score"
                     )
                 )
-            tags = ",".join([t["label"] for t in raw.get("tags", [])])
-            if tags:
-                taxonomies.append(
-                    self.build_taxonomy("info", "DT", "IrisTags", "{}".format(tags))
-                )
+            if tags := ",".join([t["label"] for t in raw.get("tags", [])]):
+                taxonomies.append(self.build_taxonomy("info", "DT", "IrisTags", f"{tags}"))
 
         elif r["service"] == "pivot":
             taxonomies.append(self.build_taxonomy("info", "DT", "Pivots", "Pivots"))
 
-        result = {"taxonomies": taxonomies}
-        return result
+        return {"taxonomies": taxonomies}
 
     def run(self):
         data = self.get_data()
@@ -326,7 +308,7 @@ class DomainToolsAnalyzer(Analyzer):
                 self.report(r)
 
         except NotFoundException:
-            self.error(self.data_type.capitalize() + " not found")
+            self.error(f"{self.data_type.capitalize()} not found")
         except NotAuthorizedException:
             self.error("An authorization error occurred")
         except ServiceUnavailableException:

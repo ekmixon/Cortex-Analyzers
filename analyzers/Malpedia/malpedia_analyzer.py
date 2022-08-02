@@ -31,18 +31,24 @@ class MalpediaAnalyzer(Analyzer):
         timestamps = []
         try:
             for fn in os.listdir(self.rulepaths):
-                for path in os.path.join(self.rulepaths, fn):
-                    if os.path.isfile(path) and path.endswith('.yar'):
-                        timestamps.append(datetime.datetime.fromtimestamp(os.stat(path)[ST_MTIME]))
+                timestamps.extend(
+                    datetime.datetime.fromtimestamp(os.stat(path)[ST_MTIME])
+                    for path in os.path.join(self.rulepaths, fn)
+                    if os.path.isfile(path) and path.endswith('.yar')
+                )
+
             newest = max(timestamps)
             hours = (datetime.datetime.now() - newest).seconds / 3600
         except ValueError:
             hours = self.update_hours + 1
 
-        if hours > self.update_hours or len(timestamps) == 0:
+        if hours > self.update_hours or not timestamps:
             try:
-                req = requests.get('{}/yara/after/2010-01-01?format=json'.format(self.baseurl),
-                                   auth=HTTPBasicAuth(self.user, self.pwd))
+                req = requests.get(
+                    f'{self.baseurl}/yara/after/2010-01-01?format=json',
+                    auth=HTTPBasicAuth(self.user, self.pwd),
+                )
+
                 if req.status_code == requests.codes.ok:
                     rules_json = json.loads(req.text)
                     for color, color_data in rules_json.items():
@@ -50,10 +56,13 @@ class MalpediaAnalyzer(Analyzer):
                             with io.open(os.path.join(self.rulepaths, rule_name), 'w', encoding='utf-8') as f:
                                 f.write(rule_text)
                 else:
-                    self.error('Could not download new rules due tue HTTP {}: {}'.format(req.status_code, req.text))
+                    self.error(
+                        f'Could not download new rules due tue HTTP {req.status_code}: {req.text}'
+                    )
+
             except Exception as e:
-                with io.open('%s' % os.path.join(self.rulepaths, "error.txt"), 'w') as f:
-                    f.write('Error: {}\n'.format(e))
+                with io.open(f'{os.path.join(self.rulepaths, "error.txt")}', 'w') as f:
+                    f.write(f'Error: {e}\n')
 
     def check(self, file):
         """
@@ -73,12 +82,15 @@ class MalpediaAnalyzer(Analyzer):
             matches = rule.match(file)
             if len(matches) > 0:
                 for rulem in matches:
-                    rule_family = "_".join([x for x in rulem.rule.replace("_", ".", 1).split("_")[:-1]])
+                    rule_family = "_".join(list(rulem.rule.replace("_", ".", 1).split("_")[:-1]))
                     if rule_family not in all_matches:
                         all_matches.append(rule_family)
         for rule_family in all_matches:
-            rules_info_txt = requests.get('{}/family/{}'.format(self.baseurl, rule_family),
-                                          auth=HTTPBasicAuth(self.user, self.pwd))
+            rules_info_txt = requests.get(
+                f'{self.baseurl}/family/{rule_family}',
+                auth=HTTPBasicAuth(self.user, self.pwd),
+            )
+
             rules_info_json = json.loads(rules_info_txt.text)
             result.append({
                 'family': rule_family,
@@ -92,17 +104,12 @@ class MalpediaAnalyzer(Analyzer):
         return result
 
     def summary(self, raw):
-        taxonomies = []
         namespace = "Malpedia"
         predicate = "Match"
 
-        value = "{} rule(s)".format(len(raw["results"]))
-        if len(raw["results"]) == 0:
-            level = "safe"
-        else:
-            level = "malicious"
-
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
+        value = f'{len(raw["results"])} rule(s)'
+        level = "safe" if len(raw["results"]) == 0 else "malicious"
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
     def run(self):

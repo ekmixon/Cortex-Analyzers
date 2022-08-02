@@ -46,7 +46,12 @@ class HippoAnalyzer(Analyzer):
             value = self.more_summary(raw)[self.get_data()]
             if value > 0:
                 level = "malicious"
-            taxonomies.append(self.build_taxonomy(level, namespace, predicate, "{} record(s)".format(value)))
+            taxonomies.append(
+                self.build_taxonomy(
+                    level, namespace, predicate, f"{value} record(s)"
+                )
+            )
+
 
         return {"taxonomies": taxonomies}
 
@@ -63,13 +68,18 @@ class HippoAnalyzer(Analyzer):
         headers = {'Content-Type': 'application/json'}
 
         try:
-            request = urllib2.Request('{}/hippocampe/api/v1.0/{}'.format(self.url, self.service), post_data, headers)
+            request = urllib2.Request(
+                f'{self.url}/hippocampe/api/v1.0/{self.service}',
+                post_data,
+                headers,
+            )
+
             response = urllib2.urlopen(request)
             report = json.loads(response.read())
 
             self.report(report)
         except urllib2.HTTPError:
-            self.error("Hippocampe: " + str(sys.exc_info()[1]))
+            self.error(f"Hippocampe: {str(sys.exc_info()[1])}")
         except urllib2.URLError:
             self.error("Hippocampe: service is not available")
         except Exception as e:

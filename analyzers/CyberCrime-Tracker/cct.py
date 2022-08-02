@@ -15,20 +15,16 @@ class CyberCrimeTrackerAnalyzer(Analyzer):
         Analyzer.__init__(self)
 
     def summary(self, raw):
-        level = 'info'
         namespace = 'CCT'
         predicate = 'C2 Search'
 
         hit_count = len(raw.get('results', []))
-        value = "{} hits".format(hit_count)
+        value = f"{hit_count} hits"
         if hit_count == 1:
-            value = value[:-2] + ""
+            value = f"{value[:-2]}"
 
-        if hit_count > 0:
-            level = 'malicious'
-
-        taxonomies = []
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
+        level = 'malicious' if hit_count > 0 else 'info'
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {
             "taxonomies": taxonomies
         }

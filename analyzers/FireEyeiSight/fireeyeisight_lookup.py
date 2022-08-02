@@ -35,10 +35,7 @@ class APIRequestHandler(object):
 
         r = requests.get(self.URL + endpoint, headers=headers)
 
-        if r.status_code == 200:
-            return r.json()
-        else:
-            return -1
+        return r.json() if r.status_code == 200 else -1
 
 
 class FireEyeiSightAnalyzer(Analyzer):
@@ -116,13 +113,12 @@ class FireEyeiSightAnalyzer(Analyzer):
         return response
 
     def query(self, data):
-        results = dict()
         try:
-            r = self.request_handler.exec_query('/search/text?text=%s' % data)
+            r = self.request_handler.exec_query(f'/search/text?text={data}')
             report_ids = [x.get('reportId', None) for x in r['message']] if r != -1 else []
             data_info = []
             for report in report_ids:
-                r = self.request_handler.exec_query('/pivot/report/%s/indicator' % report)
+                r = self.request_handler.exec_query(f'/pivot/report/{report}/indicator')
                 if self.data_type == 'domain':
                     tmp_info = [x for x in r['message'].get('publishedIndicators', [])
                                 if x.get('domain', None) == data] if r != -1 else []
@@ -141,16 +137,16 @@ class FireEyeiSightAnalyzer(Analyzer):
             return self.cleanup(data_info)
         except Exception as e:
             self.error("OS error: {0}".format(e))
-        return results
+        return {}
 
     def summary(self, raw):
         taxonomies = []
         level = "info"
-        namespace = "FireEyeiSight"
-        predicate = "Report"
         score = raw['score']
         level = raw['level']
         if score > 0:
+            namespace = "FireEyeiSight"
+            predicate = "Report"
             taxonomies.append(self.build_taxonomy(level, namespace, predicate, score))
         return {"taxonomies": taxonomies}
 

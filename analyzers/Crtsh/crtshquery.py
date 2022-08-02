@@ -42,11 +42,11 @@ class CrtshAnalyzer(Analyzer):
                 content = req.content.decode('utf-8')
                 data = json.loads(content.replace('}{', '},{'))
             except Exception as e:
-                self.error("Error retrieving base domain information. {}".format(e))
+                self.error(f"Error retrieving base domain information. {e}")
                 return None
 
         if wildcard:
-            url2 = base_url.format("%25{}.".format(domain))
+            url2 = base_url.format(f"%25{domain}.")
             req2 = requests.get(url2, headers={'User-Agent': ua})
             if req2.ok and not req2.headers['content-type'].startswith('text/html'):
                 try:
@@ -54,12 +54,12 @@ class CrtshAnalyzer(Analyzer):
                     data2 = json.loads(content2.replace('}{', '},{'))
                     data.extend(data2)
                 except Exception as e:
-                    self.error("Error retrieving wildcard information. {}".format(e))
+                    self.error(f"Error retrieving wildcard information. {e}")
                     return None
 
         for c in data:
             if c.get('min_cert_id'):
-                det_url = 'https://crt.sh/?q={}&output=json'.format(c['min_cert_id'])
+                det_url = f"https://crt.sh/?q={c['min_cert_id']}&output=json"
                 try:
                     det_req = requests.get(det_url, headers={'User-Agent': ua})
                     if det_req.status_code == requests.codes.ok:
@@ -84,13 +84,13 @@ class CrtshAnalyzer(Analyzer):
 
     def summary(self, raw):
         taxonomies = []
-        level = "info"
-        namespace = "crt.sh"
-        predicate = "Certificates"
         value = ""
 
         if "certobj" in raw:
-            value = "{}".format(len(raw["certobj"]["result"]))
+            value = f'{len(raw["certobj"]["result"])}'
+            level = "info"
+            namespace = "crt.sh"
+            predicate = "Certificates"
             taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
 
         return {"taxonomies": taxonomies}

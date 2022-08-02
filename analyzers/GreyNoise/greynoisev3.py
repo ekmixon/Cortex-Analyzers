@@ -32,7 +32,7 @@ class GreyNoiseAnalyzer(Analyzer):
             try:
                 self.report(api_client.ip(self.get_data()))
             except Exception as e:
-                self.error("Unable to query GreyNoise API\n{}".format(e))
+                self.error(f"Unable to query GreyNoise API\n{e}")
         else:
             self.notSupported()
 
@@ -176,7 +176,7 @@ class GreyNoiseAnalyzer(Analyzer):
             return {"taxonomies": taxonomies}
 
         except Exception as e:
-            self.error("Summary failed\n{}".format(e.message))
+            self.error(f"Summary failed\n{e.message}")
 
 
 if __name__ == "__main__":

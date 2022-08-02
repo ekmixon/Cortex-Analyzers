@@ -66,18 +66,16 @@ class FileInfoAnalyzer(Analyzer):
         return {"taxonomies": taxonomies}
 
     def run(self):
-        results = []
-
         # Add metadata to result directly as it's mandatory
         m = MetadataSubmodule()
         metadata_results, _ = m.analyze_file(self.filepath)
-        results.append(
+        results = [
             {
                 "submodule_name": m.name,
                 "results": metadata_results,
                 "summary": m.module_summary(),
             }
-        )
+        ]
 
         for module in available_submodules:
             if module.check_file(
@@ -105,22 +103,22 @@ class FileInfoAnalyzer(Analyzer):
                     results.append(
                         {
                             "submodule_name": module.name,
-                            "results": "{}".format(excp),
+                            "results": f"{excp}",
                             "summary": None,
                         }
                     )
+
 
         self.report({"results": results})
 
     def artifacts(self, raw):
         artifacts = []
         if self.observables and self.auto_extract_artifacts:
-            for path, module in self.observables:
-                artifacts.append(
-                    self.build_artifact(
-                        "file", path, tags=["from_fileinfo:{}".format(module)]
-                    )
-                )
+            artifacts.extend(
+                self.build_artifact("file", path, tags=[f"from_fileinfo:{module}"])
+                for path, module in self.observables
+            )
+
         return artifacts
 
 

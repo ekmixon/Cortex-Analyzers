@@ -45,26 +45,23 @@ class EmlParserAnalyzer(Analyzer):
             self.notSupported()
 
     def summary(self, raw):
-        # Initialise
-        taxonomies = []
         level = "info"
         namespace = "EmlParser"
         predicate_attachments = "Attachments"
         predicate_urls = "Urls"
-        value_attachments = "0"
         value_urls = "0"
-        
-        # Get values
-        if 'attachments' in raw:
-            value_attachments = len(raw['attachments'])
+
+        value_attachments = len(raw['attachments']) if 'attachments' in raw else "0"
         if 'url' in raw.get('iocs'):
             value_urls = len(raw.get('iocs').get('url'))
 
-        # Build summary
-        taxonomies.append(self.build_taxonomy(
-            level, namespace, predicate_attachments, value_attachments))
-        taxonomies.append(self.build_taxonomy(
-            level, namespace, predicate_urls, value_urls))
+        taxonomies = [
+            self.build_taxonomy(
+                level, namespace, predicate_attachments, value_attachments
+            ),
+            self.build_taxonomy(level, namespace, predicate_urls, value_urls),
+        ]
+
         return {"taxonomies": taxonomies}
 
     def artifacts(self, raw):
@@ -72,30 +69,31 @@ class EmlParserAnalyzer(Analyzer):
         urls = raw.get('iocs').get('url')
         ip = raw.get('iocs').get('ip')
         domains = raw.get('iocs').get('domain')
-        
+
         ## Extract email addresses
         mail_addresses = raw.get('iocs').get('email')
         hashes = raw.get('iocs').get('hash')
 
         if urls:
-            for u in urls:
-                artifacts.append(self.build_artifact('url',str(u)))
+            artifacts.extend(self.build_artifact('url',str(u)) for u in urls)
         if ip:
-            for i in ip:
-                artifacts.append(self.build_artifact('ip',str(i)))
+            artifacts.extend(self.build_artifact('ip',str(i)) for i in ip)
         if mail_addresses:
-            for e in mail_addresses:
-                artifacts.append(self.build_artifact('mail',str(e)))
+            artifacts.extend(self.build_artifact('mail',str(e)) for e in mail_addresses)
         if domains: 
-            for e in domains:
-                artifacts.append(self.build_artifact('domain',str(e)))
+            artifacts.extend(self.build_artifact('domain',str(e)) for e in domains)
         if hashes:
-             for h in hashes:
-                artifacts.append(self.build_artifact('hash',str(h.get('hash'))))
-                artifacts.append(self.build_artifact('filename',str(h['filename']))) 
+            for h in hashes:
+                artifacts.extend(
+                    (
+                        self.build_artifact('hash', str(h.get('hash'))),
+                        self.build_artifact('filename', str(h['filename'])),
+                    )
+                )
+
                 filepath = os.path.join(self.job_directory, 'output', h.get('filename'))
                 artifacts.append(self.build_artifact('file', filepath))
-        
+
         # if 'text_html' in raw.get('body'):
         #     urls.extend(raw.get('body').get('text_html').get('uri')  
         return artifacts

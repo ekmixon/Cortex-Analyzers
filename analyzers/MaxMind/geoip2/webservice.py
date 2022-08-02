@@ -94,7 +94,7 @@ class Client(object):
         self._locales = locales
         self._user_id = user_id
         self._license_key = license_key
-        self._base_uri = 'https://%s/geoip/v2.1' % host
+        self._base_uri = f'https://{host}/geoip/v2.1'
 
     def city(self, ip_address='me'):
         """This method calls the GeoIP2 Precision City endpoint.
@@ -148,8 +148,7 @@ class Client(object):
             self._handle_error(response, uri)
 
     def _user_agent(self):
-        return 'GeoIP2 Python Client v%s (%s)' % (geoip2.__version__,
-                                                  default_user_agent())
+        return f'GeoIP2 Python Client v{geoip2.__version__} ({default_user_agent()})'
 
     def _handle_success(self, response, uri):
         try:

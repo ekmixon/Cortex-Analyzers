@@ -18,12 +18,15 @@ class AbuseFinderAnalyzer(Analyzer):
 
         taxonomies = []
         if raw['abuse_finder'] and raw['abuse_finder'].get('abuse'):
-            for abuse in raw['abuse_finder']['abuse']:
-                taxonomies.append(self.build_taxonomy("info", "Abuse_Finder", "Address", abuse))
+            taxonomies.extend(
+                self.build_taxonomy("info", "Abuse_Finder", "Address", abuse)
+                for abuse in raw['abuse_finder']['abuse']
+            )
+
         else:
             taxonomies.append(self.build_taxonomy("info", "Abuse_Finder", "Address", "None"))
             return {"taxonomies": taxonomies}
-        
+
         return {}
 
     def abuse(self):

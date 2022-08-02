@@ -53,15 +53,11 @@ class DiarioAnalyzer(Analyzer):
         return dict(data)
 
     def summary(self, raw):
-        taxonomies = []
         level = "info"
         namespace = "Diario"
-        predicate = "GetReport"
         value = "Not Found"
 
-        if self.service == "scan":
-            predicate = "Scan"
-
+        predicate = "Scan" if self.service == "scan" else "GetReport"
         verdicts = {
             "Goodware": "safe",
             "Malware": "malicious",
@@ -73,7 +69,7 @@ class DiarioAnalyzer(Analyzer):
             value = raw["prediction"]
             level = verdicts.get(value)
 
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
     def run(self):

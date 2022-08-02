@@ -14,7 +14,6 @@ class CyberprotectAnalyzer(Analyzer):
 
     def summary(self, raw):
         taxonomies = []
-        namespace = "Cyberprotect"
         if self.service == 'ThreatScore':
             level = 'info'
             value = 'not in database'
@@ -23,12 +22,19 @@ class CyberprotectAnalyzer(Analyzer):
                 if 'value' in raw['threatscore'] and 'level' in raw['threatscore']:
                     value = raw['threatscore']['value']
                     level = raw['threatscore']['level']
+            namespace = "Cyberprotect"
             taxonomies.append(self.build_taxonomy(level, namespace, self.service, value))
         return {"taxonomies": taxonomies}
 
     def run(self):
         Analyzer.run(self)
-        if self.service == 'ThreatScore' and (self.data_type == 'domain' or self.data_type == 'hash' or self.data_type == 'ip' or self.data_type == 'url' or self.data_type == 'user-agent'):
+        if self.service == 'ThreatScore' and self.data_type in [
+            'domain',
+            'hash',
+            'ip',
+            'url',
+            'user-agent',
+        ]:
             try:
                 response = requests.post(self.URL, json = { 'data' : self.get_data() })
                 result = response.json()

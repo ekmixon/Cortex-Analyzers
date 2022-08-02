@@ -56,18 +56,12 @@ class ElasticsearchAnalyzer(Analyzer):
 
 
     def summary(self, raw):
-        taxonomies = []
         namespace = "ELK"
         predicate = "Hit(s)"
 
-        value = "{}".format(raw['info']['hitcount'])
-        if raw['info']['hitcount'] > 0:
-            level = "suspicious"
-        else:
-            level = "safe"
-
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
-
+        value = f"{raw['info']['hitcount']}"
+        level = "suspicious" if raw['info']['hitcount'] > 0 else "safe"
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
     def artifacts(self, raw):
@@ -80,33 +74,26 @@ class ElasticsearchAnalyzer(Analyzer):
             #domains
             if 'url_domain' in hit:
                 if isinstance(hit['url_domain'],list):
-                    for domain in hit['url_domain']:
-                        domains.append(domain)
+                    domains.extend(iter(hit['url_domain']))
                 else:
                     domains.append(hit['url_domain'])
             if 'dns_question_name' in hit:
                 if isinstance(hit['dns_question_name'],list):
-                    for domain in hit['dns_question_name']:
-                        domains.append(domain)
+                    domains.extend(iter(hit['dns_question_name']))
                 else:
                     domains.append(hit['dns_question_name'])
             #urls
-            if 'url_full' in hit:
-                if isinstance(hit['url_full'],list):
-                    for url in hit['url_full']:
-                        urls.append(url)
-
+            if 'url_full' in hit and isinstance(hit['url_full'], list):
+                urls.extend(iter(hit['url_full']))
             #ips
             if 'source_ip' in hit:
                 if isinstance(hit['source_ip'],list):
-                    for ip in hit['source_ip']:
-                        ips.append(ip)
+                    ips.extend(iter(hit['source_ip']))
                 else:
                     ips.append(hit['source_ip'])
             if 'destination_ip' in hit:
                 if isinstance(hit['destination_ip'],list):
-                    for ip in hit['destination_ip']:
-                        ips.append(ip)
+                    ips.extend(iter(hit['destination_ip']))
                 else:
                     ips.append(hit['destination_ip'])
             if 'dns_resolvedip' in hit:

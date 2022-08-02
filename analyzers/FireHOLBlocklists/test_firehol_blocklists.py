@@ -38,4 +38,4 @@ class TestFireholBlocklistsValidData(unittest.TestCase):
         results = json.loads(sys.stdout.getvalue())
         self.assertEqual(results.get('full').get('count'), 2, 'Number of hits are wrong.')
         for hit in results.get('full').get('hits'):
-            self.assertTrue(hit.get('list') == 'ips' or hit.get('list') == 'net', 'Expected lists are wrong.')
+            self.assertTrue(hit.get('list') in ['ips', 'net'], 'Expected lists are wrong.')

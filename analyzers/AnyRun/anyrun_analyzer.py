@@ -18,7 +18,6 @@ class AnyRunAnalyzer(Analyzer):
             requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
     def summary(self, raw):
-        taxonomies = []
         level = "safe"
         namespace = "AnyRun"
         predicate = "Sandbox"
@@ -30,9 +29,11 @@ class AnyRunAnalyzer(Analyzer):
         elif value == 100:
             level = "malicious"
 
-        taxonomies.append(
-            self.build_taxonomy(level, namespace, predicate, "{0}/100".format(value))
-        )
+        taxonomies = [
+            self.build_taxonomy(
+                level, namespace, predicate, "{0}/100".format(value)
+            )
+        ]
 
         return {"taxonomies": taxonomies}
 
@@ -103,9 +104,7 @@ class AnyRunAnalyzer(Analyzer):
                     verify=self.verify_ssl,
                 )
                 if response.status_code == 200:
-                    finished = (
-                        True if response.json()["data"]["status"] == "done" else False
-                    )
+                    finished = response.json()["data"]["status"] == "done"
                 elif 400 < response.status_code < 500:
                     self.error(response.json()["message"])
                 tries += 1
@@ -119,7 +118,7 @@ class AnyRunAnalyzer(Analyzer):
             for incident in final_report.get("incidents", []):
                 incident.pop("events", None)
             for process in final_report.get("processes", []):
-                process.pop("modules", None)   
+                process.pop("modules", None)
             self.report(final_report)
 
         except requests.exceptions.RequestException as e:

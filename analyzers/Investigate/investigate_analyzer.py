@@ -30,11 +30,7 @@ class InvestigateAnalyzer(Analyzer):
         if self.service == 'categorization':
             #Generate taxonomy of the domains current blocklist status
             predicate = 'Status'
-            if 'status' not in raw:
-                status = 0
-            else:
-                status = raw['status']
-
+            status = 0 if 'status' not in raw else raw['status']
             if status == -1:
                 level = 'malicious'
             elif status == 0:
@@ -42,9 +38,13 @@ class InvestigateAnalyzer(Analyzer):
             elif status == 1:
                 level = 'safe'
 
-            taxonomies.append(self.build_taxonomy(level, namespace, predicate,
-                              '{}'.format(self.STATUS_MAP[status])))
-            
+            taxonomies.append(
+                self.build_taxonomy(
+                    level, namespace, predicate, f'{self.STATUS_MAP[status]}'
+                )
+            )
+
+
             #Generate taxonomy of the security categories associated with the domain
             level = 'info'
             predicate = 'Security Categories'
@@ -52,10 +52,12 @@ class InvestigateAnalyzer(Analyzer):
                 security_categories = []
             else:
                 security_categories = raw['security_categories']
-            
+
             display_str = ', '.join(security_categories) if security_categories else 'None'
-            taxonomies.append(self.build_taxonomy(level, namespace, predicate,
-                              '{}'.format(display_str)))
+            taxonomies.append(
+                self.build_taxonomy(level, namespace, predicate, f'{display_str}')
+            )
+
 
             #Generate taxonomy of the content categories associated with the domain
             predicate = 'Content Categories'
@@ -63,10 +65,12 @@ class InvestigateAnalyzer(Analyzer):
                 content_categories = []
             else:
                 content_categories = raw['content_categories']
-            
+
             display_str = ', '.join(content_categories) if content_categories else 'None'
-            taxonomies.append(self.build_taxonomy(level, namespace, predicate,
-                              '{}'.format(display_str)))
+            taxonomies.append(
+                self.build_taxonomy(level, namespace, predicate, f'{display_str}')
+            )
+
 
 
         #Summary for file hash lookup in sample database
@@ -78,11 +82,11 @@ class InvestigateAnalyzer(Analyzer):
             else:
                 if raw['threatScore'] < 50:
                     level = 'safe'
-                elif raw['threatScore'] >= 50 and raw['threatScore'] < 80:
+                elif raw['threatScore'] < 80:
                     level = 'suspicious'
                 else:
                     level = 'malicious'
-                message = '{}'.format(raw['threatScore']) 
+                message = f"{raw['threatScore']}" 
 
             taxonomies.append(self.build_taxonomy(level, namespace, predicate, message))
 

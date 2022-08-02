@@ -45,15 +45,14 @@ class MISPClient:
                     if isinstance(ssl[idx], str) and os.path.isfile(ssl[idx]):
                         verify = ssl[idx]
                     elif isinstance(ssl[idx], str) and not os.path.isfile(ssl[idx]) and ssl[idx] != "":
-                        raise CertificateNotFoundError('Certificate not found under {}.'.format(ssl[idx]))
+                        raise CertificateNotFoundError(f'Certificate not found under {ssl[idx]}.')
                     elif isinstance(ssl[idx], bool):
                         verify = ssl[idx]
 
-                # Do the same checks again, for the non-list type
                 elif isinstance(ssl, str) and os.path.isfile(ssl):
                     verify = ssl
                 elif isinstance(ssl, str) and not os.path.isfile(ssl) and ssl != "":
-                    raise CertificateNotFoundError('Certificate not found under {}.'.format(ssl))
+                    raise CertificateNotFoundError(f'Certificate not found under {ssl}.')
                 elif isinstance(ssl, bool):
                     verify = ssl
                 self.misp_connections.append(pymisp.ExpandedPyMISP(url=server,
@@ -65,7 +64,7 @@ class MISPClient:
             if isinstance(ssl, str) and os.path.isfile(ssl):
                 verify = ssl
             elif isinstance(ssl, str) and not os.path.isfile(ssl) and ssl != "":
-                raise CertificateNotFoundError('Certificate not found under {}.'.format(ssl))
+                raise CertificateNotFoundError(f'Certificate not found under {ssl}.')
             elif isinstance(ssl, bool):
                 verify = ssl
             self.misp_connections.append(pymisp.ExpandedPyMISP(url=url,
@@ -83,9 +82,7 @@ class MISPClient:
         """
         hashtypes = ['md5', 'sha1', 'sha256', 'ssdeep', 'sha224', 'sha384', 'sha512', 'sha512/224', 'sha512/256',
                      'tlsh', 'authentihash']
-        filenames = []
-        for h in hashtypes:
-            filenames.append('filename|{0}'.format(h))
+        filenames = ['filename|{0}'.format(h) for h in hashtypes]
         return hashtypes + filenames
 
     @staticmethod
@@ -203,12 +200,7 @@ class MISPClient:
         :param misp_response: 
         :return: 
         """
-        response = []
-
-        for event in misp_response:
-            response.append(self.__clean_event(event['Event']))
-
-        return response
+        return [self.__clean_event(event['Event']) for event in misp_response]
 
     def __search(self, value, type_attribute):
         """Search method call wrapper.

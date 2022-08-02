@@ -39,10 +39,9 @@ class Processor:
     def run(self):
         result = {}
         for dbname in self.databases:
-            if not self.analyzer.get_param("config.use_%s" % dbname, True):
+            if not self.analyzer.get_param(f"config.use_{dbname}", True):
                 continue
-            res = self.get(dbname)
-            if res:
+            if res := self.get(dbname):
                 result[dbname] = res
         return result
 
@@ -202,22 +201,7 @@ class ProcessorIp(Processor):
                     self.analyzer._artifacts.add(("user-agent", rec["value"]))
                 continue
             if recontype == "SSL_SERVER":
-                if recontype != "cert":
-                    # not handled yet
-                    continue
-                if "infos" not in rec:
-                    continue
-                cert = rec["infos"]
-                result.setdefault("certs", set()).add(
-                    (
-                        cert["subject_text"],
-                        cert["issuer_text"],
-                        cert["md5"],
-                        cert["sha1"],
-                        cert["sha256"],
-                    )
-                )
-                self.analyzer._artifacts.add(("certificate_hash", cert["sha1"]))
+                # not handled yet
                 continue
         for subr in all_results.values() if self.keep_addresses else [result]:
             self.clean_results(subr)
@@ -323,24 +307,24 @@ class ProcessorFqdn(Processor):
         return self.analyzer.databases[dbase].searchdns(name=self.data, reverse=True)
 
     def get(self, dbase):
-        if dbase == "passive":
-            # specific case: two filters (w/ & w/o reverse=True)
-            addresses = set()
-            names = set()
-            for rec in self.analyzer.databases[dbase].get(
-                self.flt(dbase), fields=["addr", "value", "targetval"]
-            ):
-                if rec.get("addr"):
-                    addresses.add(rec["addr"])
-                if rec.get("targetval"):
-                    names.add(rec["targetval"])
-                names.add(rec["value"])
-            self.analyzer._artifacts.update(("ip", value) for value in addresses)
-            self.analyzer._artifacts.update(("fqdn", value) for value in names)
-            return sorted(addresses, key=utils.ip2int) + sorted(
-                names, key=lambda v: v.strip().split(".")[::-1]
-            )
-        return super().get(dbase)
+        if dbase != "passive":
+            return super().get(dbase)
+        # specific case: two filters (w/ & w/o reverse=True)
+        addresses = set()
+        names = set()
+        for rec in self.analyzer.databases[dbase].get(
+            self.flt(dbase), fields=["addr", "value", "targetval"]
+        ):
+            if rec.get("addr"):
+                addresses.add(rec["addr"])
+            if rec.get("targetval"):
+                names.add(rec["targetval"])
+            names.add(rec["value"])
+        self.analyzer._artifacts.update(("ip", value) for value in addresses)
+        self.analyzer._artifacts.update(("fqdn", value) for value in names)
+        return sorted(addresses, key=utils.ip2int) + sorted(
+            names, key=lambda v: v.strip().split(".")[::-1]
+        )
 
 
 class ProcessorDomain(ProcessorFqdn):
@@ -371,7 +355,8 @@ class IVREAnalyzer(Analyzer):
         self._artifacts = set()
         self.db = MetaDB(
             self.get_param(
-                "config.db_url", default=config.DB if hasattr(config, "DB") else None
+                "config.db_url",
+                default=config.DB if hasattr(config, "DB") else None,
             ),
             urls={
                 attr: url
@@ -379,12 +364,10 @@ class IVREAnalyzer(Analyzer):
                     (
                         attr,
                         self.get_param(
-                            "config.db_url_%s" % name,
-                            default=(
-                                getattr(config, "DB_%s" % attr.upper())
-                                if hasattr(config, "DB_%s" % attr.upper())
-                                else None
-                            ),
+                            f"config.db_url_{name}",
+                            default=getattr(config, f"DB_{attr.upper()}")
+                            if hasattr(config, f"DB_{attr.upper()}")
+                            else None,
                         ),
                     )
                     for name, attr in DATABASES
@@ -392,6 +375,7 @@ class IVREAnalyzer(Analyzer):
                 if url
             },
         )
+
         self.databases = {name: getattr(self.db, attr) for name, attr in DATABASES}
 
     def summary(self, raw):
@@ -422,10 +406,11 @@ class IVREAnalyzer(Analyzer):
                 res = data["data"]
                 vulnerabilities.update(res.get("vulnerabilities", []))
                 openports.update(res.get("openports", []))
-            for vuln in vulnerabilities:
-                taxonomies.append(
-                    self.build_taxonomy("malicious", "IVRE", "Vulns", vuln)
-                )
+            taxonomies.extend(
+                self.build_taxonomy("malicious", "IVRE", "Vulns", vuln)
+                for vuln in vulnerabilities
+            )
+
             taxonomies.append(
                 self.build_taxonomy(
                     "info", "IVRE", "Distinct open ports", str(len(openports))

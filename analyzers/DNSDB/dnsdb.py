@@ -42,17 +42,13 @@ class DnsDbAnalyzer(Analyzer):
     def summary(self, raw):
         # taxonomy = {"level": "info", "namespace": "Farsight", "predicate": "DNSDB", "value": 0}
         taxonomies = []
-        level = "info"
-        namespace = "Farsight"
-        predicate = "DNSDB"
-
         if "records" in raw:
             r = len(raw["records"])
 
-            if r == 0 or r == 1:
-                value = "{} record".format(r)
-            else:
-                value = "{} records".format(r)
+            value = f"{r} record" if r in {0, 1} else f"{r} records"
+            level = "info"
+            namespace = "Farsight"
+            predicate = "DNSDB"
 
             taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
 

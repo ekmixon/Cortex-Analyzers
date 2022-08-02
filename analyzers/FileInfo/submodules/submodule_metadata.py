@@ -24,12 +24,11 @@ class MetadataSubmodule(SubmoduleBaseclass):
     def exif(self, path):
         # Exif info
         exifreport = pyexifinfo.get_json(path)
-        result = dict(
-            (key, value)
+        return {
+            key: value
             for key, value in exifreport[0].items()
             if not (key.startswith("File") or key.startswith("SourceFile"))
-        )
-        return result
+        }
 
     def module_summary(self):
         taxonomy = {
@@ -45,9 +44,6 @@ class MetadataSubmodule(SubmoduleBaseclass):
                 t = taxonomy
                 t["value"] = section["submodule_section_content"]["Filetype"]
                 taxonomies.append(t)
-            else:
-                pass
-
         self.summary["taxonomies"] = taxonomies
         return self.summary
 

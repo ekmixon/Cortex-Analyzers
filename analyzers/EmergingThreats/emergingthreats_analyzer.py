@@ -44,12 +44,16 @@ class EmergingThreatsAnalyzer(Analyzer):
                 value = "%s=%d" % (x['category'], x['score'])
                 if x['category'] in RED_CATEGORIES and x['score'] >= 70:
                     level = "malicious"
-                elif (70 <= x['score'] < 100 and x['category'] in RED_CATEGORIES) or (
-                        x['score'] >= 100 and x['category'] in YELLOW_CATEGORIES):
+                elif x['score'] >= 100 and x['category'] in YELLOW_CATEGORIES:
                     level = "suspicious"
                 else:
                     level = "safe"
-                taxonomies.append(self.build_taxonomy(level, namespace, "%s-info" % self.data_type, value))
+                taxonomies.append(
+                    self.build_taxonomy(
+                        level, namespace, f"{self.data_type}-info", value
+                    )
+                )
+
         elif self.data_type == 'hash' and raw['events'] not in ["-", "Error"]:
             value = str(len(raw['events'])) + " signatures"
             taxonomies.append(self.build_taxonomy("malicious", namespace, 'malware-info', value))

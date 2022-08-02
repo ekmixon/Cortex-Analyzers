@@ -21,11 +21,7 @@ class LdapQuery(Analyzer):
         uid_search_field = self.get_param(
             "config.search_field", None, "uid_search_field is missing"
         )
-        if self.data_type == "mail":
-            self.search_field = "mail"
-        else:
-            self.search_field = uid_search_field
-
+        self.search_field = "mail" if self.data_type == "mail" else uid_search_field
         self.attributes = self.get_param(
             "config.attributes", None, "Missing attributes list to report"
         )
@@ -34,8 +30,9 @@ class LdapQuery(Analyzer):
                 ldap_address,
                 port=ldap_port,
                 get_info=ALL,
-                use_ssl=True if ldap_port == 636 else False,
+                use_ssl=ldap_port == 636,
             )
+
             self.connection = Connection(
                 s,
                 auto_bind=True,
@@ -74,13 +71,11 @@ class LdapQuery(Analyzer):
         try:
 
             data = self.get_param("data", None, "Data is missing")
-            q = "({}={})".format(self.search_field, data)
+            q = f"({self.search_field}={data})"
 
             self.connection.search(self.base_dn, q, SUBTREE, attributes=self.attributes)
-            responses = self.connection.response
-
             users = []
-            if responses:
+            if responses := self.connection.response:
                 for response in responses:
                     dict_response = response.get("attributes", None)
                     user = {}

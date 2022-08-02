@@ -71,7 +71,6 @@ class CIRCLPassiveSSLAnalyzer(Analyzer):
                 'cert': cfetch}
 
     def summary(self, raw):
-        taxonomies = []
         level = "info"
         namespace = "CIRCL"
         predicate = "PassiveSSL"
@@ -81,12 +80,8 @@ class CIRCLPassiveSSLAnalyzer(Analyzer):
         if (self.data_type == 'ip') and ("certificates" in raw):
             r = len(raw['certificates'])
 
-        if r == 0 or r == 1:
-            value = "{} record".format(r)
-        else:
-            value = "{} records".format(r)
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
-
+        value = f"{r} record" if r in [0, 1] else f"{r} records"
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
 
@@ -118,7 +113,7 @@ class CIRCLPassiveSSLAnalyzer(Analyzer):
 
 
     def run(self):
-        if self.data_type == 'certificate_hash' or self.data_type == 'hash':
+        if self.data_type in ['certificate_hash', 'hash']:
             data = self.get_data()
             if len(data) != 40:
                 self.error('CIRCL Passive SSL expects a sha1 hash, given hash has more or less than 40 characters.')

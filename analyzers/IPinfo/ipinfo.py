@@ -16,24 +16,20 @@ class IPinfo():
             raise IPinfoException("No API key is present")
 
         self.session = requests.Session()
-        self.session.headers.update(
-            {"Authorization": "Bearer {}".format(self.api_key)})
+        self.session.headers.update({"Authorization": f"Bearer {self.api_key}"})
 
     def details(self, ip_address):
-        url = "{}/{}".format(self.base_url, ip_address)
+        url = f"{self.base_url}/{ip_address}"
         return self._request(url)
 
     def hosted_domains(self, ip_address):
-        url = "{}/domains/{}".format(self.base_url, ip_address)
+        url = f"{self.base_url}/domains/{ip_address}"
         return self._request(url)
 
     def _request(self, url):
         res = self.session.request("GET", url)
 
         if res.status_code != 200:
-            raise IPinfoException("IPinfo returns {}".format(res.status_code))
+            raise IPinfoException(f"IPinfo returns {res.status_code}")
 
-        if res.text == "":
-            return {}
-
-        return res.json()
+        return {} if res.text == "" else res.json()

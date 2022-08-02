@@ -29,8 +29,6 @@ class VxStreamSandboxAnalyzer(Analyzer):
         self.api_key = self.get_param('config.key', None, 'VxStream Sandbox API key is missing')
 
     def summary(self, raw_report):
-        taxonomies = []
-
         # default values
         level = "info"
         namespace = "HybridAnalysis"
@@ -54,20 +52,20 @@ class VxStreamSandboxAnalyzer(Analyzer):
             if report_verdict == 'malicious':
                 level = 'malicious'
                 value = "Malicious"
+            elif report_verdict == 'no specific threat':
+                level = 'info'
+                value = "No Specific Threat"
             elif report_verdict == 'suspicious':
                 level = 'suspicious'
                 value = "Suspicious"
             elif report_verdict == 'whitelisted':
                 level = 'safe'
                 value = "Whitelisted"
-            elif report_verdict == 'no specific threat':
-                level = 'info'
-                value = "No Specific Threat"
         else:
             level = 'info'
             value = "Unknown"
 
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
     def run(self):

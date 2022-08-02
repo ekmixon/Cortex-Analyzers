@@ -39,11 +39,11 @@ class OLEToolsSubmodule(SubmoduleBaseclass):
                     "Composite Document File V2 Document"
                 )
             ):
-                if kwargs.get("mimetype").startswith(
-                    "application/encrypted"
-                ) and not is_encrypted(kwargs.get("file")):
-                    return False
-                return True
+                return bool(
+                    not kwargs.get("mimetype").startswith("application/encrypted")
+                    or is_encrypted(kwargs.get("file"))
+                )
+
         except KeyError:
             return False
         return False

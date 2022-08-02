@@ -14,7 +14,7 @@ class ManalyzeSubmodule(SubmoduleBaseclass):
 
         self.use_docker = kwargs.get("use_docker", False)
         self.use_binary = kwargs.get("use_binary", False)
-        self.binary_path = kwargs.get("binary_path", None)
+        self.binary_path = kwargs.get("binary_path")
 
         self.name = "Manalyze"
 
@@ -35,13 +35,14 @@ class ManalyzeSubmodule(SubmoduleBaseclass):
                 self.binary_path,
                 "--dump=imports,exports,sections",
                 "--hashes",
-                "--pe={}".format(filepath),
+                f"--pe={filepath}",
                 "--plugins=clamav,compilers,peid,strings,findcrypt,cryptoaddress,packer,imports,resources,mitigation,authenticode",
                 "--output=json",
             ],
             stdout=subprocess.PIPE,
             cwd=os.path.split(self.binary_path)[0],
         )
+
         result = sp.stdout
         result = json.loads(result.decode("utf-8"))
         return result[filepath]
@@ -54,17 +55,18 @@ class ManalyzeSubmodule(SubmoduleBaseclass):
                 "run",
                 "--rm",
                 "-v",
-                "{}:/data".format(filepath),
+                f"{filepath}:/data",
                 "evanowe/manalyze",
                 "/Manalyze/bin/manalyze",
                 "--dump=imports,exports,sections",
                 "--hashes",
-                "--pe=/data/{}".format(filename),
+                f"--pe=/data/{filename}",
                 "--plugins=clamav,compilers,peid,strings,findcrypt,cryptoaddress,packer,imports,resources,mitigation,authenticode",
                 "--output=json",
             ],
             stdout=subprocess.PIPE,
         )
+
         result = sp.stdout
         result = json.loads(result.decode("utf-8"))
         return result[list(result)[0]]
@@ -144,7 +146,6 @@ class ManalyzeSubmodule(SubmoduleBaseclass):
         self.add_result_subsection("Manalyze raw output", json.dumps(results, indent=4))
 
     def module_summary(self):
-        taxonomies = []
         taxonomy = {
             "level": "info",
             "namespace": "FileInfo",
@@ -162,10 +163,8 @@ class ManalyzeSubmodule(SubmoduleBaseclass):
                 type(content) == dict
                 and "level" in content
                 and content["level"] != None
-            ):
-                # print("type: {}/{}".format(type(c['level']), c['level']))
-                if l < content["level"]:
-                    l = content["level"]
+            ) and l < content["level"]:
+                l = content["level"]
 
         if l == 2:
             taxonomy["value"] = "Suspicious"
@@ -173,7 +172,7 @@ class ManalyzeSubmodule(SubmoduleBaseclass):
         elif l == 3:
             taxonomy["value"] = "Malicious"
             taxonomy["level"] = "malicious"
-        taxonomies.append(taxonomy)
+        taxonomies = [taxonomy]
         self.summary["taxonomies"] = taxonomies
         return self.summary
 

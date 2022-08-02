@@ -23,7 +23,10 @@ class IntezerCommunityAnalyzer(Analyzer):
 
                 base_url = 'https://analyze.intezer.com/api/v2-0'
                 # this should be done just once in a day, but we cannot do that with Cortex Analyzers
-                response = requests.post(base_url + '/get-access-token', json={'api_key': api_key})
+                response = requests.post(
+                    f'{base_url}/get-access-token', json={'api_key': api_key}
+                )
+
                 response.raise_for_status()
                 session = requests.session()
                 session.headers['Authorization'] = session.headers['Authorization'] = 'Bearer %s' % response.json()[
@@ -31,9 +34,9 @@ class IntezerCommunityAnalyzer(Analyzer):
 
                 with open(filepath, 'rb') as file_to_upload:
                     files = {'file': (filename, file_to_upload)}
-                    response = session.post(base_url + '/analyze', files=files)
+                    response = session.post(f'{base_url}/analyze', files=files)
                     if response.status_code != 201:
-                        self.error('Error sending file to Intezer Analyzer\n{}'.format(response.text))
+                        self.error(f'Error sending file to Intezer Analyzer\n{response.text}')
 
                 while response.status_code != 200:
                     time.sleep(3)
@@ -53,7 +56,6 @@ class IntezerCommunityAnalyzer(Analyzer):
             self.unexpectedError(e)
 
     def summary(self, raw):
-        taxonomies = []
         namespace = 'IntezerCommunity'
 
         if 'status' in raw and raw['status'] == 'succeeded':
@@ -73,8 +75,7 @@ class IntezerCommunityAnalyzer(Analyzer):
             if 'family_name' in raw['result']:
                 value = raw['result']['family_name']
 
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
-
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {'taxonomies': taxonomies}
 
 

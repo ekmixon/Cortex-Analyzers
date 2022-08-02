@@ -10,7 +10,7 @@ class DNSLookingglassAnalyzer(Analyzer):
         Analyzer.__init__(self)
 
     def lookingglass_checkdomain(self, data):
-        url = 'https://isc.sans.edu/api/dnslookup/%s?json' % data
+        url = f'https://isc.sans.edu/api/dnslookup/{data}?json'
         r = requests.get(url)
 
         return json.loads(r.text)
@@ -22,28 +22,22 @@ class DNSLookingglassAnalyzer(Analyzer):
 
         if ipv4s:
             ipv4s = list(dict.fromkeys(ipv4s))
-            for i in ipv4s:
-                artifacts.append(self.build_artifact('ip',str(i)))
-
+            artifacts.extend(self.build_artifact('ip',str(i)) for i in ipv4s)
         if ipv6s:
             ipv6s = list(dict.fromkeys(ipv6s))
-            for j in ipv6s:
-                artifacts.append(self.build_artifact('ip',str(j)))
-
+            artifacts.extend(self.build_artifact('ip',str(j)) for j in ipv6s)
         return artifacts
 
     def summary(self, raw):
-        taxonomies = []
         level = "info"
         namespace = "Lookingglass"
         predicate = "ERR"
         value = "-"
 
-        value = "{} hit(s)".format(raw['count'])
+        value = f"{raw['count']} hit(s)"
         predicate = raw['hits']
 
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
-
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
     def get_hits(self, hits):
@@ -59,12 +53,10 @@ class DNSLookingglassAnalyzer(Analyzer):
             data = self.get_param('data', None, 'Domain is missing')
             r = self.lookingglass_checkdomain(data)
 
-            results = dict()
-            results['results'] = list()
-
             if len(r) != 0:
+                results = {'results': []}
                 for hit in r:
-                    result = dict()
+                    result = {}
                     try:
                         result['answer'] = hit['answer']
                         result['status'] = hit['status']
@@ -73,8 +65,8 @@ class DNSLookingglassAnalyzer(Analyzer):
                     except KeyError:
                         pass
 
-                results['hits'] = self.get_hits(int(len(results['results'])))
-                results['count'] = int(len(results['results']))
+                results['hits'] = self.get_hits(len(results['results']))
+                results['count'] = len(results['results'])
 
                 self.report(results)
             else:

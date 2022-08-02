@@ -9,9 +9,7 @@ class GZIPSubmodule(SubmoduleBaseclass):
         self.name = "GZIP Test"
 
     def check_file(self, **kwargs):
-        if kwargs.get("filetype") == "GZIP":
-            return True
-        return False
+        return kwargs.get("filetype") == "GZIP"
 
     def analyze_file(self, path):
         self.add_result_subsection("TEST", {})

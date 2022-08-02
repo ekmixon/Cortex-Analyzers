@@ -25,16 +25,12 @@ class HashddAnalyzer(Analyzer):
             self.url = "https://api.hashdd.com/v1/detail/"
 
     def hashdd_check(self, data):
-        if self.hashdd_key is None:
-            headers = {}
-        else:
-            headers = {"X-API-KEY": self.hashdd_key}
-        r = requests.get("{}{}".format(self.url, data), headers=headers, verify=False)
+        headers = {} if self.hashdd_key is None else {"X-API-KEY": self.hashdd_key}
+        r = requests.get(f"{self.url}{data}", headers=headers, verify=False)
         r.raise_for_status()  # Raise exception on HTTP errors
         return r.json()
 
     def summary(self, raw):
-        taxonomies = []
         namespace = "Hashdd"
         predicate = "knownlevel"
         value = "Unknown"
@@ -42,11 +38,11 @@ class HashddAnalyzer(Analyzer):
         level = "info"
         if self.service == "status" and "knownlevel" in raw:
             knownlevel = raw["knownlevel"]
-            if knownlevel == "Good":
-                level = "safe"
-            elif knownlevel == "Bad":
+            if knownlevel == "Bad":
                 level = "malicious"
-            value = "{}".format(knownlevel)
+            elif knownlevel == "Good":
+                level = "safe"
+            value = f"{knownlevel}"
 
         elif self.service == "detail":
             if "Bad" in [x["knownlevel"] for x in raw["search_results"]]:
@@ -55,8 +51,8 @@ class HashddAnalyzer(Analyzer):
             elif "Good" in [x["knownlevel"] for x in raw["search_results"]]:
                 level = "safe"
                 knownlevel = "Good"
-            value = "{}".format(knownlevel)
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
+            value = f"{knownlevel}"
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
     def run(self):
@@ -72,7 +68,7 @@ class HashddAnalyzer(Analyzer):
             elif self.service == "detail":
                 self.report(response)
         else:
-            self.error("{}".format(response["result"]))
+            self.error(f'{response["result"]}')
 
 
 if __name__ == "__main__":

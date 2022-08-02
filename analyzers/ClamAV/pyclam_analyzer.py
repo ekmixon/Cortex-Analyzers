@@ -19,26 +19,22 @@ class ClamAnalyzer(Analyzer):
         :param file: Path to file
         :returns: Python dictionary containing the results
         """
-        match = cd.scan_file(file)
-        if match:
-            return match[file][1]
-        return None
+        return match[file][1] if (match := cd.scan_file(file)) else None
 
     # def summary(self, raw):
     #    return raw
     def summary(self, raw):
-        taxonomies = []
         namespace = "ClamAV"
         predicate = "Match"
 
         if raw["results"]:
-            value = "{}".format(raw["results"])
+            value = f'{raw["results"]}'
             level = "malicious"
         else:
             value = "No matches"
             level = "safe"
 
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
     def run(self):

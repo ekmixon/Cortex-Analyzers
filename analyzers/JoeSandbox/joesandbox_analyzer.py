@@ -14,12 +14,10 @@ class JoeSandboxAnalyzer(Analyzer):
     def __init__(self):
         Analyzer.__init__(self)
         self.url = self.get_param("config.url", None, "JoeSandbox url is missing")
-        if self.get_param("config.key"):
-            apikey = self.get_param("config.key")
-        else:
-            apikey = self.get_param(
-                "config.apikey", None, "JoeSandbox API key is missing"
-            )
+        apikey = self.get_param("config.key") or self.get_param(
+            "config.apikey", None, "JoeSandbox API key is missing"
+        )
+
         self.service = self.get_param(
             "config.service", None, "JoeSandbox service is missing"
         )
@@ -28,13 +26,12 @@ class JoeSandboxAnalyzer(Analyzer):
         self.joe = JoeSandbox(apikey, self.url, verify_ssl=False, accept_tac=True)
 
     def summary(self, raw):
-        taxonomies = []
         namespace = "JSB"
         predicate = "Report"
 
         r = raw["detection"]
 
-        value = "{}/{}".format(r["score"], r["maxscore"])
+        value = f'{r["score"]}/{r["maxscore"]}'
 
         if r["clean"]:
             level = "safe"
@@ -46,7 +43,7 @@ class JoeSandboxAnalyzer(Analyzer):
             level = "info"
             value = "Unknown"
 
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
     def run(self):
@@ -87,14 +84,17 @@ class JoeSandboxAnalyzer(Analyzer):
             self.error("JoeSandbox analysis timed out")
         # Download the report
         response = self.joe.analysis_download(webid, "irjsonfixed", run=0)
-        analysis = json.loads(response[1].decode("utf-8")).get("analysis", None)
-        if analysis:
+        if analysis := json.loads(response[1].decode("utf-8")).get(
+            "analysis", None
+        ):
             analysis["htmlreport"] = (
-                self.url + "analysis/" + str(analysis["id"]) + "/0/html"
+                f"{self.url}analysis/" + str(analysis["id"]) + "/0/html"
             )
+
             analysis["pdfreport"] = (
-                self.url + "analysis/" + str(analysis["id"]) + "/0/pdf"
+                f"{self.url}analysis/" + str(analysis["id"]) + "/0/pdf"
             )
+
             self.report(analysis)
         else:
             self.error("Invalid output")

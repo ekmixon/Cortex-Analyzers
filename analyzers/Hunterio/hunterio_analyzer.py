@@ -18,11 +18,11 @@ class Hunterio(Analyzer):
     def summary(self, raw):
 
         taxonomies = []
-        namespace = "Hunter.io"
         if self.service == "domainsearch":
             found = 0
             if raw.get("meta") and raw["meta"].get("results"):
                 found = raw["meta"].get("results")
+            namespace = "Hunter.io"
             taxonomies.append(
                 self.build_taxonomy("info", namespace, "Emails found", str(found))
             )
@@ -32,23 +32,23 @@ class Hunterio(Analyzer):
     def artifacts(self, raw):
         artifacts = []
         if raw.get("meta") and raw["meta"].get("results") > 0:
-            for email in raw.get("data", {}).get("emails", []):
-                artifacts.append({"type": "email", "value": email.get("value")})
+            artifacts.extend(
+                {"type": "email", "value": email.get("value")}
+                for email in raw.get("data", {}).get("emails", [])
+            )
+
         return artifacts
 
     def run(self):
         Analyzer.run(self)
 
-        if self.service == "domainsearch" and (
-            self.data_type == "domain" or self.data_type == "fqdn"
-        ):
+        if self.service == "domainsearch" and self.data_type in ["domain", "fqdn"]:
             try:
                 offset = 0
                 req = requests.get(
-                    "{}domain-search?domain={}&api_key={}&limit=10&offset={}".format(
-                        self.URI, self.get_data(), self.key, offset
-                    )
+                    f"{self.URI}domain-search?domain={self.get_data()}&api_key={self.key}&limit=10&offset={offset}"
                 )
+
                 firstResponse = {}
                 if req.status_code == 200:
                     firstResponse = req.json()
@@ -58,10 +58,9 @@ class Hunterio(Analyzer):
                         while meta.get("results") > offset:
                             offset = meta.get("limit") + meta.get("offset")
                             additionalResponse = requests.get(
-                                "{}domain-search?domain={}&api_key={}&limit=10&offset={}".format(
-                                    self.URI, self.get_data(), self.key, offset
-                                )
+                                f"{self.URI}domain-search?domain={self.get_data()}&api_key={self.key}&limit=10&offset={offset}"
                             )
+
                             if additionalResponse.status_code != 400:
                                 additionalResponse = additionalResponse.json()
                                 meta = additionalResponse.get("meta")

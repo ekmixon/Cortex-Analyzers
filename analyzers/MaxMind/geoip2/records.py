@@ -16,7 +16,7 @@ class Record(object):
     _valid_attributes = None
 
     def __init__(self, **kwargs):
-        valid_args = dict((k, kwargs.get(k)) for k in self._valid_attributes)
+        valid_args = {k: kwargs.get(k) for k in self._valid_attributes}
         self.__dict__.update(valid_args)
 
     def __setattr__(self, name, value):
@@ -83,7 +83,10 @@ class City(PlaceRecord):
       :type: dict
 
     """
-    _valid_attributes = set(['confidence', 'geoname_id', 'names'])
+    _valid_attributes = {'confidence', 'geoname_id', 'names'}
+
+
+
 
 
 class Continent(PlaceRecord):
@@ -124,7 +127,10 @@ class Continent(PlaceRecord):
       :type: dict
 
     """
-    _valid_attributes = set(['code', 'geoname_id', 'names'])
+    _valid_attributes = {'code', 'geoname_id', 'names'}
+
+
+
 
 
 class Country(PlaceRecord):
@@ -173,7 +179,10 @@ class Country(PlaceRecord):
       :type: dict
 
     """
-    _valid_attributes = set(['confidence', 'geoname_id', 'iso_code', 'names'])
+    _valid_attributes = {'confidence', 'geoname_id', 'iso_code', 'names'}
+
+
+
 
 
 class RepresentedCountry(Country):
@@ -232,8 +241,10 @@ class RepresentedCountry(Country):
       :type: unicode
 
     """
-    _valid_attributes = set(['confidence', 'geoname_id', 'iso_code',
-                             'names', 'type'])
+    _valid_attributes = {'confidence', 'geoname_id', 'iso_code', 'names', 'type'}
+
+
+
 
 
 class Location(Record):
@@ -286,9 +297,19 @@ class Location(Record):
       :type: unicode
 
     """
-    _valid_attributes = set(['accuracy_radius', 'latitude', 'longitude',
-                             'metro_code', 'postal_code', 'postal_confidence',
-                             'time_zone'])
+    _valid_attributes = {
+        'accuracy_radius',
+        'latitude',
+        'longitude',
+        'metro_code',
+        'postal_code',
+        'postal_confidence',
+        'time_zone',
+    }
+
+
+
+
 
 
 class MaxMind(Record):
@@ -305,7 +326,10 @@ class MaxMind(Record):
       :type: int
 
     """
-    _valid_attributes = set(['queries_remaining'])
+    _valid_attributes = {'queries_remaining'}
+
+
+
 
 
 class Postal(Record):
@@ -335,7 +359,10 @@ class Postal(Record):
       :type: int
 
     """
-    _valid_attributes = set(['code', 'confidence'])
+    _valid_attributes = {'code', 'confidence'}
+
+
+
 
 
 class Subdivision(PlaceRecord):
@@ -385,7 +412,7 @@ class Subdivision(PlaceRecord):
       :type: dict
 
     """
-    _valid_attributes = set(['confidence', 'geoname_id', 'iso_code', 'names'])
+    _valid_attributes = {'confidence', 'geoname_id', 'iso_code', 'names'}
 
 
 class Subdivisions(tuple):
@@ -403,8 +430,7 @@ class Subdivisions(tuple):
     # pylint:disable=W0142
     def __new__(cls, locales, *subdivisions):
         subdivisions = [Subdivision(locales, **x) for x in subdivisions]
-        obj = super(cls, Subdivisions).__new__(cls, subdivisions)
-        return obj
+        return super(cls, Subdivisions).__new__(cls, subdivisions)
 
     def __init__(self, locales, *subdivisions):  # pylint:disable=W0613
         self._locales = locales

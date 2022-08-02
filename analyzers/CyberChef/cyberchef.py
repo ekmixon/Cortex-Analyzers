@@ -13,14 +13,12 @@ class CyberchefAnalyzer(Analyzer):
         self.url = self.get_param('config.url', None, 'URL is missing')
 
     def summary(self, raw):
-        taxonomies = []
         level = 'info'
         namespace = 'CyberChef'
- 
+
         # Set predicate for output_data
         predicate = self.service
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, "baked!"))
- 
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, "baked!")]
         return {"taxonomies": taxonomies}
    
     def run(self):

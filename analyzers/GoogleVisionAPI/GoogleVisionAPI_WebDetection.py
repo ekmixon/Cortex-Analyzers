@@ -52,7 +52,14 @@ class GoogleAPI_Vision(Analyzer):
 
         try:
             api_answer = loads(
-                post(url + "?key=" + api_key, data=dumps(data), headers=header, proxies=https_proxy).text)
+                post(
+                    f"{url}?key={api_key}",
+                    data=dumps(data),
+                    headers=header,
+                    proxies=https_proxy,
+                ).text
+            )
+
         except ValueError:
             self.error("Cannot parse JSON answer from server")
         else:

@@ -8,11 +8,16 @@ class SearchJson(object):
     def __init__(self, search = ""):
         self.search = search
     def do_search(self):
-        res = []
-        for sample in AFSample.search(self.search):
-            res.append({'metadata': sample.serialize(),
-                        'tags': [tag.serialize() for tag in sample.__getattribute__('tags')]
-            })
+        res = [
+            {
+                'metadata': sample.serialize(),
+                'tags': [
+                    tag.serialize() for tag in sample.__getattribute__('tags')
+                ],
+            }
+            for sample in AFSample.search(self.search)
+        ]
+
         return {'search': self.search, 'records': res}
         
 
@@ -105,8 +110,6 @@ class AutoFocusAnalyzer(Analyzer):
             self.error('Unknown AutoFocus service or invalid data type')
 
     def summary(self, raw):
-        # taxonomy = {"level": "info", "namespace": "PaloAltoNetworks", "predicate": "AutoFocus", "value": 0}
-        taxonomies = []
         level = "info"
         namespace = "PaloAltoNetworks"
         predicate = "AutoFocus"
@@ -114,12 +117,11 @@ class AutoFocusAnalyzer(Analyzer):
         if "metadata" in raw:
             value = "Sample found"
         elif "records" in raw:
-            value = "{} sample(s) found".format(len(raw["records"]))
+            value = f'{len(raw["records"])} sample(s) found'
         else:
             value = ""
 
-        taxonomies.append(self.build_taxonomy(level,namespace,predicate,value))
-
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {'taxonomies': taxonomies}
 
 

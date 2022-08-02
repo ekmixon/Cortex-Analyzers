@@ -15,10 +15,7 @@ class MISPAnalyzer(Analyzer):
             name = 'Unnamed'
         if self.get_param('config.cert_check', True):
             ssl_path = self.get_param('config.cert_path', None)
-            if not ssl_path or ssl_path == '':
-                ssl = True
-            else:
-                ssl = ssl_path
+            ssl = True if not ssl_path or ssl_path == '' else ssl_path
         else:
             ssl = False
         try:
@@ -33,26 +30,20 @@ class MISPAnalyzer(Analyzer):
             self.error(str(te))
 
     def summary(self, raw):
-        taxonomies = []
         level = "info"
         namespace = "MISP"
         predicate = "Search"
 
         data = []
         for r in raw['results']:
-            for res in r['result']:
-                if 'uuid' in res:
-                    data.append(res['uuid'])
-
+            data.extend(res['uuid'] for res in r['result'] if 'uuid' in res)
         # return number of unique events
         if not data:
             value = "0 events"
-            taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
         else:
-            value = "{} event(s)".format(len(list(set(data))))
+            value = f"{len(list(set(data)))} event(s)"
             level = "suspicious"
-            taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
-
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
     def run(self):
@@ -60,9 +51,9 @@ class MISPAnalyzer(Analyzer):
             response = self.misp.search_hash(self.get_data())
         elif self.data_type == 'url':
             response = self.misp.search_url(self.get_data())
-        elif self.data_type == 'domain' or self.data_type == 'fqdn':
+        elif self.data_type in ['domain', 'fqdn']:
             response = self.misp.search_domain(self.get_data())
-        elif self.data_type == 'mail' or self.data_type == 'mail_subject':
+        elif self.data_type in ['mail', 'mail_subject']:
             response = self.misp.search_mail(self.get_data())
         elif self.data_type == 'ip':
             response = self.misp.search_ip(self.get_data())

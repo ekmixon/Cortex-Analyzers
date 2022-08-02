@@ -11,7 +11,7 @@ class DShieldAnalyzer(Analyzer):
         Analyzer.__init__(self)
 
     def dshield_checkip(self, data):
-        url = 'https://isc.sans.edu/api/ip/%s?json' % data
+        url = f'https://isc.sans.edu/api/ip/{data}?json'
         r = requests.get(url)
         return json.loads(r.text)
 
@@ -35,7 +35,6 @@ class DShieldAnalyzer(Analyzer):
         return artifacts
 
     def summary(self, raw):
-        taxonomies = []
         value = "-"
         level = 'safe'
 
@@ -55,9 +54,10 @@ class DShieldAnalyzer(Analyzer):
             else:
                 level = 'malicious'
 
-        value = "{} count(s) / {} attack(s) / {} threatfeed(s)".format(raw['count'], raw['attacks'], raw['threatfeedscount'])
+        value = f"{raw['count']} count(s) / {raw['attacks']} attack(s) / {raw['threatfeedscount']} threatfeed(s)"
 
-        taxonomies.append(self.build_taxonomy(level, "DShield", "Score", value))
+
+        taxonomies = [self.build_taxonomy(level, "DShield", "Score", value)]
         return {"taxonomies": taxonomies}
 
     def get_reputation(self, risk):
@@ -75,30 +75,46 @@ class DShieldAnalyzer(Analyzer):
             # Do we get valid results
             if self.data_type in r.keys():
                 info = r[self.data_type]
-                results = {}
-                results['ip'] = info['number']
-                results['count'] = info['count'] if isinstance(info['count'], int) else 0
-                results['attacks'] = info['attacks'] if isinstance(info['attacks'], int) else 0
-                results['lastseen'] = info['maxdate'] if isinstance(info['maxdate'], str) else 'None'
-                results['firstseen'] = info['mindate'] if isinstance(info['mindate'], str) else 'None'
-                results['updated'] = info['updated'] if isinstance(info['updated'], str) else 'None'
-                results['comment'] = info['comment'] if isinstance(info['comment'], str) else 'None'
-                results['asabusecontact'] = info['asabusecontact'] if isinstance(info['asabusecontact'], str) else 'Unknown'
-                results['as'] = info['as']
-                results['asname'] = info['asname']
-                results['ascountry'] = info['ascountry']
-                results['assize'] = info['assize']
-                results['network'] = info['network']
-                results['threatfeedscount'] = 0
+                results = {
+                    'ip': info['number'],
+                    'count': info['count']
+                    if isinstance(info['count'], int)
+                    else 0,
+                    'attacks': info['attacks']
+                    if isinstance(info['attacks'], int)
+                    else 0,
+                    'lastseen': info['maxdate']
+                    if isinstance(info['maxdate'], str)
+                    else 'None',
+                    'firstseen': info['mindate']
+                    if isinstance(info['mindate'], str)
+                    else 'None',
+                    'updated': info['updated']
+                    if isinstance(info['updated'], str)
+                    else 'None',
+                    'comment': info['comment']
+                    if isinstance(info['comment'], str)
+                    else 'None',
+                    'asabusecontact': info['asabusecontact']
+                    if isinstance(info['asabusecontact'], str)
+                    else 'Unknown',
+                    'as': info['as'],
+                    'asname': info['asname'],
+                    'ascountry': info['ascountry'],
+                    'assize': info['assize'],
+                    'network': info['network'],
+                    'threatfeedscount': 0,
+                }
+
                 if 'threatfeeds' not in info:
                     results['threatfeeds'] = ''
                 else:
                     results['threatfeedscount'] = len(json.loads(json.dumps(info['threatfeeds'])))
-                    results['threatfeeds'] = info['threatfeeds'] 
+                    results['threatfeeds'] = info['threatfeeds']
                 # Compute a risk level based on collected information
                 results['maxrisk'] = 0
-                maxrisk = 10
                 if results['attacks'] > 0:
+                    maxrisk = 10
                     results['maxrisk'] = round(min(math.log10(results['attacks']) * 2, maxrisk))
 
                 # We add the number of threat feeds to the maxrisk to increase the detection rate

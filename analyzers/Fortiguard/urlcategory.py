@@ -15,7 +15,7 @@ class URLCategoryAnalyzer(Analyzer):
 
         if 'category' in raw:
             r = raw.get('category')
-            value = "{}".format(r)
+            value = f"{r}"
             if r in self.get_param('config.malicious_categories', []):
                 level = "malicious"
             elif r in self.get_param('config.suspicious_categories', []):
@@ -27,22 +27,19 @@ class URLCategoryAnalyzer(Analyzer):
 
             taxonomies.append(self.build_taxonomy(level, "Fortiguard", "URLCat", value))
 
-        result = {"taxonomies": taxonomies}
-        return result
+        return {"taxonomies": taxonomies}
 
     def run(self):
         Analyzer.run(self)
 
-        if self.data_type == 'domain' or self.data_type == 'url' or self.data_type == 'fqdn':
+        if self.data_type in ['domain', 'url', 'fqdn']:
             try:
                 pattern = re.compile("(?:Category: )([-\w\s]+)")
                 baseurl = 'https://www.fortiguard.com/webfilter?q='
                 url = baseurl + self.get_data()
                 req = requests.get(url)
                 category_match = re.search(pattern, req.text, flags=0)
-                self.report({
-                    'category': category_match.group(1)
-                })
+                self.report({'category': category_match[1]})
             except ValueError as e:
                 self.unexpectedError(e)
         else:

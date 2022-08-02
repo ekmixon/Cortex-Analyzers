@@ -27,7 +27,7 @@ class CIRCLPassiveDNSAnalyzer(Analyzer):
 
         # Clean the datetime problems in order to correct the json serializability
         clean_result = []
-        for ind, resultset in enumerate(result):
+        for resultset in result:
             if resultset.get('time_first', None):
                 resultset['time_first'] = resultset.get('time_first').isoformat(' ')
             if resultset.get('time_last', None):
@@ -37,31 +37,19 @@ class CIRCLPassiveDNSAnalyzer(Analyzer):
         return clean_result
 
     def summary(self, raw):
-        taxonomies = []
         level = "info"
         namespace = "CIRCL"
         predicate = "PassiveDNS"
-        r = 0
-
-        if "results" in raw:
-            r = len(raw.get('results'))
-
-        if r == 0 or r == 1:
-            value = "{} record".format(r)
-        else:
-            value = "{} records".format(r)
-
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
+        r = len(raw.get('results')) if "results" in raw else 0
+        value = f"{r} record" if r in {0, 1} else f"{r} records"
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
     def run(self):
         query = ''
         if self.data_type == 'url':
             splittedurl = self.get_data().split('/')
-            if 'http' in splittedurl[0]:
-                query = splittedurl[2]
-            else:
-                query = splittedurl[0]
+            query = splittedurl[2] if 'http' in splittedurl[0] else splittedurl[0]
         elif self.data_type == 'domain':
             query = self.get_data()
             if '/' in query:

@@ -22,7 +22,7 @@ class LastInfoSec(Analyzer):
                 self.observable_value, self.api_key
             )
         else:
-            self.error("{} not supported".format(self.data_type))
+            self.error(f"{self.data_type} not supported")
         useragent = {
             "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:41.0) Gecko/20100101 Firefox/41.0"
         }
@@ -94,7 +94,6 @@ class LastInfoSec(Analyzer):
                 self.error("Bad Response: {0}".format(ex))
 
     def summary(self, raw):
-        taxonomies = []
         level = "info"
         namespace = "LastInfoSec"
         predicate = "GetReport"
@@ -112,7 +111,7 @@ class LastInfoSec(Analyzer):
             else:
                 value = 31
 
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
 

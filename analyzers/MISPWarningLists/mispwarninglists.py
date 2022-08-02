@@ -43,7 +43,7 @@ class MISPWarninglistsAnalyzer(Analyzer):
             self.error("wrong configuration settings.")
 
     def readwarninglists(self):
-        files = glob("{}/lists/*/*.json".format(self.path))
+        files = glob(f"{self.path}/lists/*/*.json")
         listcontent = []
         for file in files:
             with io.open(file, "r") as fh:
@@ -59,10 +59,10 @@ class MISPWarninglistsAnalyzer(Analyzer):
 
     def lastlocalcommit(self):
         try:
-            with io.open("{}/.git/refs/heads/master".format(self.path), "r") as fh:
+            with io.open(f"{self.path}/.git/refs/heads/master", "r") as fh:
                 return fh.read().strip("\n")
         except Exception as e:
-            return "Error: could not get local commit hash ({}).".format(e)
+            return f"Error: could not get local commit hash ({e})."
 
     @staticmethod
     def lastremotecommit():
@@ -71,7 +71,7 @@ class MISPWarninglistsAnalyzer(Analyzer):
             result_dict = requests.get(url).json()
             return result_dict["commit"]["sha"]
         except Exception as e:
-            return "Error: could not get remote commit hash ({}).".format(e)
+            return f"Error: could not get remote commit hash ({e})."
 
     def run(self):
         results = []
@@ -81,9 +81,7 @@ class MISPWarninglistsAnalyzer(Analyzer):
             try:
                 data = ipaddress.ip_address(self.data)
             except ValueError:
-                return self.error(
-                    "{} is said to be an IP address but it isn't".format(self.data)
-                )
+                return self.error(f"{self.data} is said to be an IP address but it isn't")
 
         if not self.engine:
             for list in self.warninglists:
@@ -99,9 +97,8 @@ class MISPWarninglistsAnalyzer(Analyzer):
                         except ValueError:
                             # Ignoring if net is not a valid IP network since we want to compare ip addresses
                             pass
-                else:
-                    if data.lower() in list.get("values", []):
-                        results.append({"name": list.get("name")})
+                elif data.lower() in list.get("values", []):
+                    results.append({"name": list.get("name")})
 
                 self.report(
                     {
@@ -131,9 +128,7 @@ class MISPWarninglistsAnalyzer(Analyzer):
                 query = ext.parsed_url[2] if ext.parsed_url[2] != "" else None
 
                 if not domain or not tld:
-                    return self.error(
-                        "{} is not a valid url/domain/fqdn".format(self.data)
-                    )
+                    return self.error(f"{self.data} is not a valid url/domain/fqdn")
 
                 if query:
                     if subdomain and subdomain != "*":
@@ -164,15 +159,11 @@ class MISPWarninglistsAnalyzer(Analyzer):
             values = self.engine.execute(sql)
             self.engine.dispose()
             if values.rowcount > 0:
-                for row in values:
-                    results.append(
-                        {
-                            key: value
-                            for (key, value) in zip(
-                                ["list_name", "list_version", "value"], row
-                            )
-                        }
-                    )
+                results.extend(
+                    dict(zip(["list_name", "list_version", "value"], row))
+                    for row in values
+                )
+
             self.report({"results": results, "mode": "db", "is_uptodate": "N/A"})
 
     def summary(self, raw):

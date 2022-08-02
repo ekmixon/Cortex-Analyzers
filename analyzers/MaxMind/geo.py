@@ -57,12 +57,12 @@ class MaxMindAnalyzer(Analyzer):
 
     def summary(self, raw):
         taxonomies = []
-        level = "info"
-        namespace = "MaxMind"
-        predicate = "Location"
-
         if "continent" in raw:
-            value = "{}/{}".format(raw["country"]["name"], raw["continent"]["name"])
+            value = f'{raw["country"]["name"]}/{raw["continent"]["name"]}'
+            level = "info"
+            namespace = "MaxMind"
+            predicate = "Location"
+
             taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
 
         return {"taxonomies": taxonomies}
@@ -74,7 +74,10 @@ class MaxMindAnalyzer(Analyzer):
             try:
                 data = self.get_data()
 
-                city = geoip2.database.Reader(os.path.dirname(__file__) + '/GeoLite2-City.mmdb').city(data)
+                city = geoip2.database.Reader(
+                    f'{os.path.dirname(__file__)}/GeoLite2-City.mmdb'
+                ).city(data)
+
 
                 self.report({
                     'city': self.dump_city(city.city),

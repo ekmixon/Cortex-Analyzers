@@ -60,10 +60,7 @@ class IOCPSubmodule(SubmoduleBaseclass):
             if oo[-1] == "":
                 oo.pop()
             for i in oo:
-                j = {}
-                for k, v in json.loads(i).items():
-                    if k in ["match", "type"]:
-                        j.update({k: v})
+                j = {k: v for k, v in json.loads(i).items() if k in ["match", "type"]}
                 if j not in results["iocp_result"]:
                     results["iocp_result"].append(j)
         except Exception as e:

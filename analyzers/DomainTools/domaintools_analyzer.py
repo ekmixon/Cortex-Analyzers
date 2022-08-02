@@ -73,7 +73,7 @@ class DomainToolsAnalyzer(Analyzer):
             "service": self.service,
             "dataType": self.data_type
         }
-        
+
         if "ip_addresses" in raw:
             if type(raw["ip_addresses"]) == dict:
                 r["ip"] = {
@@ -82,9 +82,12 @@ class DomainToolsAnalyzer(Analyzer):
                 }
             elif type(raw["ip_addresses"]) == list:
                 r["ip"] = {
-                    "address": "{} IP addresses".format(len(r)),
-                    "domain_count": sum(d["domain_count"] for d in raw["ip_addresses"])
+                    "address": f"{len(r)} IP addresses",
+                    "domain_count": sum(
+                        d["domain_count"] for d in raw["ip_addresses"]
+                    ),
                 }
+
 
         if "record_count" in raw:
             r["record_count"] = raw.get('record_count')
@@ -126,13 +129,26 @@ class DomainToolsAnalyzer(Analyzer):
 
         # Prepare predicate and value for each service
         if r["service"] in ["reverse-ip", "host-domains"]:
-            taxonomies.append(self.build_taxonomy("info", "DT", "Reverse_IP",
-                                                  "{}, {} domains".format(r["ip"]["address"],
-                                                                              r["ip"]["domain_count"])))
+            taxonomies.append(
+                self.build_taxonomy(
+                    "info",
+                    "DT",
+                    "Reverse_IP",
+                    f'{r["ip"]["address"]}, {r["ip"]["domain_count"]} domains',
+                )
+            )
+
 
         if r["service"] == "name-server-domains":
-            taxonomies.append(self.build_taxonomy("info", "DT", "Reverse_Name_Server",
-                                                  "{}, {} domains".format(r["name_server"], r["domain_count"])))
+            taxonomies.append(
+                self.build_taxonomy(
+                    "info",
+                    "DT",
+                    "Reverse_Name_Server",
+                    f'{r["name_server"]}, {r["domain_count"]} domains',
+                )
+            )
+
 
         if r["service"] == "reverse-whois":
             taxonomies.append(self.build_taxonomy("info", "DT", "Reverse_Whois",
@@ -141,31 +157,57 @@ class DomainToolsAnalyzer(Analyzer):
                                                                                              "historic"])))
 
         if r["service"] == "reverse-ip-whois":
-            taxonomies.append(self.build_taxonomy("info", "DT", "Reverse_IP_Whois",
-                                                  "records:{}".format(r["record_count"])))
+            taxonomies.append(
+                self.build_taxonomy(
+                    "info",
+                    "DT",
+                    "Reverse_IP_Whois",
+                    f'records:{r["record_count"]}',
+                )
+            )
+
 
         if r["service"] == "hosting-history":
-            taxonomies.append(self.build_taxonomy("info", "DT", "Hosting_History",
-                                                  "registrars:{} / ips:{} / ns:{}".format(r["registrar_history"],
-                                                                                              r["ip_history"],
-                                                                                                  r["ns_history"])))
+            taxonomies.append(
+                self.build_taxonomy(
+                    "info",
+                    "DT",
+                    "Hosting_History",
+                    f'registrars:{r["registrar_history"]} / ips:{r["ip_history"]} / ns:{r["ns_history"]}',
+                )
+            )
+
 
         if r["service"] == "whois/history":
-            taxonomies.append(self.build_taxonomy("info", "DT", "Whois_History",
-                                                  "{} {}".format(r["record_count"], "records" if r["record_count"] > 1 else "record")))
+            taxonomies.append(
+                self.build_taxonomy(
+                    "info",
+                    "DT",
+                    "Whois_History",
+                    f'{r["record_count"]} {"records" if r["record_count"] > 1 else "record"}',
+                )
+            )
+
 
         if r["service"] == "whois/parsed" or r['service'] == "whois":
             if r["registrar"]:
-                taxonomies.append(self.build_taxonomy("info", "DT", "Whois", "REGISTRAR:{}".format(r["registrar"])))
+                taxonomies.append(
+                    self.build_taxonomy(
+                        "info", "DT", "Whois", f'REGISTRAR:{r["registrar"]}'
+                    )
+                )
+
             if r["registrant"]:
                 taxonomies.append(
-                    self.build_taxonomy("info", "DT", "Whois", "REGISTRANT:{}".format(r["registrant"])))
+                    self.build_taxonomy(
+                        "info", "DT", "Whois", f'REGISTRANT:{r["registrant"]}'
+                    )
+                )
+
 
 
         if "risk_score" in r:
-            risk_service = "Risk"
-            if "reputation" in r:
-                risk_service = "Reputation"
+            risk_service = "Reputation" if "reputation" in r else "Risk"
             if r["risk_score"] == 0:
                 level = "safe"
             elif 0 < r["risk_score"] <= 50:
@@ -173,10 +215,13 @@ class DomainToolsAnalyzer(Analyzer):
             elif r["risk_score"] > 50:
                 level = "malicious"
             taxonomies.append(
-                self.build_taxonomy(level, "DT", risk_service, "{}".format(r["risk_score"])))
+                self.build_taxonomy(
+                    level, "DT", risk_service, f'{r["risk_score"]}'
+                )
+            )
 
-        result = {'taxonomies': taxonomies}
-        return result
+
+        return {'taxonomies': taxonomies}
 
     def run(self):
         data = self.get_data()
@@ -192,7 +237,7 @@ class DomainToolsAnalyzer(Analyzer):
                 self.report(r)
 
         except NotFoundException:
-            self.error(self.data_type.capitalize() + " not found")
+            self.error(f"{self.data_type.capitalize()} not found")
         except NotAuthorizedException:
             self.error("An authorization error occurred")
         except ServiceUnavailableException:

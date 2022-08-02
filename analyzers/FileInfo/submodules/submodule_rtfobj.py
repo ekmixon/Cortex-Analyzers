@@ -14,9 +14,7 @@ class RTFObjectSubmodule(SubmoduleBaseclass):
         self.name = "rtfobj"
 
     def check_file(self, **kwargs):
-        if kwargs.get("mimetype") == "text/rtf":
-            return True
-        return False
+        return kwargs.get("mimetype") == "text/rtf"
 
     def module_summary(self):
         """Count the malicious and suspicious sections, check for CVE description"""
@@ -72,11 +70,11 @@ class RTFObjectSubmodule(SubmoduleBaseclass):
         for idx, rtfobj in enumerate(parser.objects):
             if rtfobj.is_ole:
                 if rtfobj.format_id == oleobj.OleObject.TYPE_EMBEDDED:
-                    obj_type = "{} (Embedded)".format(rtfobj.format_id)
+                    obj_type = f"{rtfobj.format_id} (Embedded)"
                 elif rtfobj.format_id == oleobj.OleObject.TYPE_LINKED:
-                    obj_type = "{} (Linked)".format(rtfobj.format_id)
+                    obj_type = f"{rtfobj.format_id} (Linked)"
                 else:
-                    obj_type = "{} (Unknown)".format(rtfobj.format_id)
+                    obj_type = f"{rtfobj.format_id} (Unknown)"
 
                 if rtfobj.is_package:
                     obj_html_class = "suspicious"
@@ -105,33 +103,28 @@ class RTFObjectSubmodule(SubmoduleBaseclass):
                     obj_html_class = "malicious"
 
                 self.add_result_subsection(
-                    "OLE object #{}".format(idx),
+                    f"OLE object #{idx}",
                     {
-                        "address": "{}".format(hex(rtfobj.start)),
+                        "address": f"{hex(rtfobj.start)}",
                         "class": obj_html_class,
                         "type": obj_type,
-                        "filename": rtfobj.filename
-                        if rtfobj.filename
-                        else "Not available",
+                        "filename": rtfobj.filename or "Not available",
                         "classname": str(rtfobj.class_name)
                         if rtfobj.class_name
                         else "Not available",
                         "size": rtfobj.oledata_size,
                         "clsid": obj_clsid,
                         "clsid_description": obj_clsid_desc,
-                        "source_path": rtfobj.src_path
-                        if rtfobj.src_path
-                        else "Not available",
-                        "temp_path": rtfobj.temp_path
-                        if rtfobj.temp_path
-                        else "Not available",
+                        "source_path": rtfobj.src_path or "Not available",
+                        "temp_path": rtfobj.temp_path or "Not available",
                     },
                 )
+
             else:
                 self.add_result_subsection(
-                    "(Non) OLE object #{}".format(idx),
+                    f"(Non) OLE object #{idx}",
                     {
-                        "index": "0x{}".format(rtfobj.start),
+                        "index": f"0x{rtfobj.start}",
                         "class": "info",
                         "type": "Not a valid OLE object",
                     },

@@ -23,7 +23,6 @@ class C1fQueryAnalyzer(Analyzer):
     @staticmethod
     def cleanup(return_data):
 
-        response = dict()
         assessments = []
         feed_labels = []
         descriptions = []
@@ -44,34 +43,30 @@ class C1fQueryAnalyzer(Analyzer):
             asns.append(entry.get('asn'))
             asn_descs.append(entry.get('asn_desc'))
             countries.append(entry.get('country'))
-            domains.append(entry.get('domain'))
-            domains.append(entry.get('fqdn'))
+            domains.extend((entry.get('domain'), entry.get('fqdn')))
             dga_indication = entry.get('dga')
 
-            if len(list(entry.get('ip_address'))) > 0:
-                for ip in entry.get('ip_address'):
-                    ip_addresses.append(ip)
+            if list(entry.get('ip_address')):
+                ip_addresses.extend(iter(entry.get('ip_address')))
             else:
                 ip_addresses.append(entry.get('ip_address'))
 
-        response['assessment'] = list(set(assessments[0]))
-        response['feed_label'] = list(set(feed_labels[0]))
-        response['description'] = list(set(descriptions[0]))
-        response['asn'] = list(set(asns[0]))
-        response['asn_desc'] = list(set(asn_descs[0]))
-        response['country'] = list(set(countries[0]))
-        response['domains'] = list(set(domains[0]))
-        response['ip_addresses'] = list(set(ip_addresses))
-        response['dga'] = dga_indication
-        response['found'] = found
-        response['count'] = len(return_data)
-
-        return response
+        return {
+            'assessment': list(set(assessments[0])),
+            'feed_label': list(set(feed_labels[0])),
+            'description': list(set(descriptions[0])),
+            'asn': list(set(asns[0])),
+            'asn_desc': list(set(asn_descs[0])),
+            'country': list(set(countries[0])),
+            'domains': list(set(domains[0])),
+            'ip_addresses': list(set(ip_addresses)),
+            'dga': dga_indication,
+            'found': found,
+            'count': len(return_data),
+        }
 
     def c1f_query(self, data):
         headers = self._getheaders()
-        results = dict()
-
         try:
             _session = requests.Session()
 
@@ -84,17 +79,14 @@ class C1fQueryAnalyzer(Analyzer):
             _query = _session.post(self.api_url, headers=headers,
                                    data=json.dumps(payload))
             if _query.status_code == 200:
-                if _query.text == "[]":
-                    return dict()
-                else:
-                    return self.cleanup(_query.json())
+                return {} if _query.text == "[]" else self.cleanup(_query.json())
             else:
-                self.error('API Access error: %s' % _query.text)
+                self.error(f'API Access error: {_query.text}')
 
         except Exception as e:
             self.error('API Request error')
 
-        return results
+        return {}
 
     def summary(self, raw):
         taxonomies = []
@@ -108,13 +100,12 @@ class C1fQueryAnalyzer(Analyzer):
                 level = "suspicious"
             elif a in ["phishing", "malware", "botnet", "Exploit"]:
                 level = "malicious"
-            value = "{}".format(a)
+            value = f"{a}"
             taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
         return {"taxonomies": taxonomies}
 
     def run(self):
-        if self.data_type == 'url' or self.data_type == 'domain' \
-                or self.data_type == 'ip':
+        if self.data_type in ['url', 'domain', 'ip']:
             data = self.get_param('data', None, 'Data is missing')
 
             rep = self.c1f_query(data)

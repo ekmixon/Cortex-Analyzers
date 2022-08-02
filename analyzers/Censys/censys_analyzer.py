@@ -77,7 +77,14 @@ class CensysAnalyzer(Analyzer):
         :return: dict
         """
         c = CensysIPv4(api_id=self.__uid, api_secret=self.__api_key)
-        return [x for x in c.search(search, fields=self.__fields,  max_records=self.__max_records, flatten=self.__flatten)]
+        return list(
+            c.search(
+                search,
+                fields=self.__fields,
+                max_records=self.__max_records,
+                flatten=self.__flatten,
+            )
+        )
 
     def run(self):
         try:
@@ -89,7 +96,7 @@ class CensysAnalyzer(Analyzer):
                 self.report({
                     'cert': self.search_certificate(self.get_data())
                 })
-            elif self.data_type == 'domain' or self.data_type == 'fqdn':
+            elif self.data_type in ['domain', 'fqdn']:
                 self.report({
                     'website': self.search_website(self.get_data())
                 })
@@ -102,7 +109,7 @@ class CensysAnalyzer(Analyzer):
                     "Data type not supported. Please use this analyzer with data types hash, ip or domain."
                 )
         except CensysNotFoundException:
-            self.report({"message": "{} could not be found.".format(self.get_data())})
+            self.report({"message": f"{self.get_data()} could not be found."})
         except CensysUnauthorizedException:
             self.error(
                 "Censys raised NotAuthorizedException. Please check your credentials."
@@ -146,18 +153,25 @@ class CensysAnalyzer(Analyzer):
                         "suspicious",
                         "Censys",
                         "TrustedCount",
-                        "{}/{}".format(trusted_count, validator_count),
+                        f"{trusted_count}/{validator_count}",
                     )
                 )
+
             else:
-                taxonomies.append(self.build_taxonomy('info', 'Censys', 'TrustedCount', '{}/{}'.format(
-                    trusted_count, validator_count
-                )))
+                taxonomies.append(
+                    self.build_taxonomy(
+                        'info',
+                        'Censys',
+                        'TrustedCount',
+                        f'{trusted_count}/{validator_count}',
+                    )
+                )
+
 
         elif 'matches' in raw:
             result_count = len(raw.get('matches', []))
             taxonomies.append(self.build_taxonomy('info', 'Censys ipv4 search', 'results', result_count))
-            
+
         return {
             'taxonomies': taxonomies
         }

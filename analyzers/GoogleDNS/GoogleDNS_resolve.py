@@ -65,10 +65,11 @@ class GoogleDNS_resolve(Analyzer):
 		target = ".".join(target.split('.')[::-1]) + '.in-addr.arpa' if self.data_type == "ip" else target
 
 		self.resolve(target)
-		if self.answer != None:
-			self.report(self.answer)
-		else:
+		if self.answer is None:
 			self.error("Something went wrong")
+
+		else:
+			self.report(self.answer)
 
 	def summary(self, raw):
 		count = self.build_taxonomy("info", "GoogleDNS", "RecordsCount", len(self.answer["Answer"]))

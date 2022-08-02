@@ -94,11 +94,10 @@ class MaltiverseAnalyzer(Analyzer):
             self.error('API Error! Please verify data type is correct.')
 
     def summary(self, raw):
-        taxonomies = []
         level = "info"
         namespace = "Maltiverse"
         predicate = "Report"
-        value = "{}".format("n/a")
+        value = 'n/a'
         if "classification" in raw:
             if raw["classification"] == "malicious":
                 level = "malicious"
@@ -106,11 +105,10 @@ class MaltiverseAnalyzer(Analyzer):
                 level = "suspicious"
             else:
                 level = "safe"
-            value = "{}".format(raw["classification"])
+            value = f'{raw["classification"]}'
 
-        
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
 
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
     def run(self):
@@ -122,10 +120,10 @@ class MaltiverseAnalyzer(Analyzer):
                 sha256 = hashlib.sha256()
                 with io.open(filepath, 'rb') as fh:
                     while True:
-                        data = fh.read(4096)
-                        if not data:
+                        if data := fh.read(4096):
+                            sha256.update(data)
+                        else:
                             break
-                        sha256.update(data)
                 hash = sha256.hexdigest()
             else:
                 # find SHA256 hash

@@ -57,15 +57,15 @@ class FireholBlocklistsAnalyzer(Analyzer):
         description = {}
         file_date = {}
         # Check for lock
-        while os.path.isfile('{}/.lock'.format(self.path)):
+        while os.path.isfile(f'{self.path}/.lock'):
             sleep(10)
 
         # First: check the ipsets
         for ipset in self.ipsets:
-            with open('{}/{}'.format(self.path, ipset)) as afile:
+            with open(f'{self.path}/{ipset}') as afile:
                 ipsetname = ipset.split('.')[0]
-                description.update({ipsetname: ''})
-                file_date.update({ipsetname: ''})
+                description[ipsetname] = ''
+                file_date[ipsetname] = ''
                 for l in afile:
                     if l[0] == '#':
                         # Check for date and break if too old
@@ -76,20 +76,19 @@ class FireholBlocklistsAnalyzer(Analyzer):
                             if (self.now - date).days > self.ignoreolderthandays:
                                 break
                         description[ipsetname] += re.sub(r'^\[.*\] \(.*\) [a-zA-Z0-9.\- ]*$', '', l.lstrip('# '))\
-                            .replace('\n\n', '\n')
-                    else:
-                        if ip in l:
-                            # On match append to hits and break; next file!
-                            hits.append({'list': ipsetname, 'description': description.get(ipsetname),
-                                         'file_date': file_date.get(ipsetname)})
-                            break
+                                .replace('\n\n', '\n')
+                    elif ip in l:
+                        # On match append to hits and break; next file!
+                        hits.append({'list': ipsetname, 'description': description.get(ipsetname),
+                                     'file_date': file_date.get(ipsetname)})
+                        break
 
         # Second: check the netsets
         for netset in self.netsets:
-            with open('{}/{}'.format(self.path, netset)) as afile:
+            with open(f'{self.path}/{netset}') as afile:
                 netsetname = netset.split('.')[0]
-                description.update({netsetname: ''})
-                file_date.update({netsetname: ''})
+                description[netsetname] = ''
+                file_date[netsetname] = ''
                 for l in afile:
                     if l[0] == '#':
                         # Check for date and break if too old
@@ -100,7 +99,7 @@ class FireholBlocklistsAnalyzer(Analyzer):
                             if (self.now - date).days > self.ignoreolderthandays:
                                 break
                         description[netsetname] += re.sub(r'^\[.*\] \(.*\) [a-zA-Z0-9.\- ]*$', '', l.lstrip('# '))\
-                            .replace('\n\n', '\n')
+                                .replace('\n\n', '\n')
                     else:
                         try:
                             if ipaddress.ip_address(ip) in ipaddress.ip_network(u'{}'.format(l.split('\n')[0])):
@@ -108,29 +107,24 @@ class FireholBlocklistsAnalyzer(Analyzer):
                                              'file_date': file_date.get(netsetname)})
                                 break
                         except ValueError as e:
-                            self.error('ValueError occurred. Used values: ipnetwork {}, ip to check {}, file {}.'
-                                       'Error message: {}'.format(l, ip, netset, e))
+                            self.error(
+                                f'ValueError occurred. Used values: ipnetwork {l}, ip to check {ip}, file {netset}.Error message: {e}'
+                            )
+
 
         return hits
 
     def summary(self, raw):
         taxonomies = []
-        namespace = "Firehol"
-        predicate = "Blocklists"
         value = "0 hit"
 
         if 'count' in raw:
             r = raw.get('count', 0)
 
-            if r == 0 or r == 1:
-                value = "{} hit".format(r)
-            else:
-                value = "{} hits".format(r)
-
-            if r > 0:
-                level = "suspicious"
-            else:
-                level = "safe"
+            value = f"{r} hit" if r in [0, 1] else f"{r} hits"
+            level = "suspicious" if r > 0 else "safe"
+            namespace = "Firehol"
+            predicate = "Blocklists"
             taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
         return {"taxonomies": taxonomies}
 

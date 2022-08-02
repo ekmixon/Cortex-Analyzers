@@ -11,7 +11,7 @@ class FlossSubmodule(SubmoduleBaseclass):
     def __init__(self, **kwargs):
         SubmoduleBaseclass.__init__(self)
         self.name = "FLOSS"
-        self.floss_path = kwargs.get("binary_path", None)
+        self.floss_path = kwargs.get("binary_path")
         self.string_length = kwargs.get("string_length", 4)
 
     def check_file(self, **kwargs):
@@ -25,17 +25,14 @@ class FlossSubmodule(SubmoduleBaseclass):
         if not exists(self.floss_path) or not isfile(self.floss_path):
             return "ERROR:floss:FLOSS binary not found."
         sp = subprocess.run(
-            [
-                self.floss_path,
-                "-n {}".format(self.string_length),
-                filepath,
-            ],
+            [self.floss_path, f"-n {self.string_length}", filepath],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
+
         stdout = sp.stdout.decode("utf-8")
         stderr = sp.stderr.decode("utf-8")
-        return "{}\n{}".format(stdout, stderr)
+        return f"{stdout}\n{stderr}"
 
     def top_ranked(self, output: str) -> dict:
         sys_bkp = sys.stdout
@@ -49,10 +46,9 @@ class FlossSubmodule(SubmoduleBaseclass):
             batch=False,
         )
         sys.stdout = sys.__stdout__
-        ranked_scored = [
+        return [
             " - ".join(line.split(",")) for line in test.getvalue().split("\n")
         ]
-        return ranked_scored
 
     def process_output(self, output: str) -> dict:
         """Processes the output string and return a dictionary with sections to use in the build results method.
@@ -65,19 +61,19 @@ class FlossSubmodule(SubmoduleBaseclass):
         for line in lines:
             if line[:24] == "Finished execution after":
                 continue
-            if line[0:5] == "FLOSS" and line[-7:] == "strings":
+            if line[:5] == "FLOSS" and line[-7:] == "strings":
                 current_section = line
                 if current_section not in processed_output.keys():
-                    processed_output.update({current_section: []})
+                    processed_output[current_section] = []
                 continue
-            elif line[0:12] == "ERROR:floss:":
+            elif line[:12] == "ERROR:floss:":
                 current_section = "Errors"
                 if current_section not in processed_output.keys():
-                    processed_output.update({current_section: []})
-            elif line[0:5] == "FIXME":
+                    processed_output[current_section] = []
+            elif line[:5] == "FIXME":
                 continue
             if line != "":
-                if line[0:12] == "ERROR:floss:":
+                if line[:12] == "ERROR:floss:":
                     processed_output[current_section].append(line[12:])
                 else:
                     processed_output[current_section].append(line)

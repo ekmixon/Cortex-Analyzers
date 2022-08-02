@@ -20,8 +20,7 @@ class IPinfoAnalyzer(Analyzer):
         namespace = "IPinfo"
 
         if self.service == "details":
-            country = raw.get("country")
-            if country:
+            if country := raw.get("country"):
                 taxonomies.append(
                     self.build_taxonomy(level, namespace, "Country", country)
                 )
@@ -34,15 +33,8 @@ class IPinfoAnalyzer(Analyzer):
                 )
 
         elif self.service == "hosted_domains":
-            total = 0
-            if "domains" in raw:
-                total = len(raw["domains"])
-
-            if total < 2:
-                value = "{} record".format(total)
-            else:
-                value = "{} records".format(total)
-
+            total = len(raw["domains"]) if "domains" in raw else 0
+            value = f"{total} record" if total < 2 else f"{total} records"
             taxonomies.append(
                 self.build_taxonomy(level, namespace, "HostedDomains", value)
             )

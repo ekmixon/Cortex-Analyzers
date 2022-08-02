@@ -18,19 +18,14 @@ class CERTatPassiveDNSAnalyzer(Analyzer):
         self.report({'results': query(self.get_data(), int(self.limit))})
 
     def summary(self, raw):
-        taxonomies = []
         level = "info"
         namespace = "CERT.at"
         predicate = "PassiveDNS"
 
         results = raw.get('results')
         r = len(results)
-        if r == 0 or r == 1:
-            value = "{} hit".format(r)
-        else:
-            value = "{} hits".format(r)
-
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, value))
+        value = f"{r} hit" if r in {0, 1} else f"{r} hits"
+        taxonomies = [self.build_taxonomy(level, namespace, predicate, value)]
         return {"taxonomies": taxonomies}
 
 

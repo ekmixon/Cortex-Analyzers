@@ -104,7 +104,7 @@ class Reader(object):
                                     ip_address)
 
     def _get(self, database_type, ip_address):
-        if not database_type in self.metadata().database_type:
+        if database_type not in self.metadata().database_type:
             caller = inspect.stack()[2][3]
             raise TypeError("The %s method cannot be used with the "
                             "%s database" %
@@ -112,7 +112,9 @@ class Reader(object):
         record = self._db_reader.get(ip_address)
         if record is None:
             raise geoip2.errors.AddressNotFoundError(
-                "The address %s is not in the database." % ip_address)
+                f"The address {ip_address} is not in the database."
+            )
+
         return record
 
     def _model_for(self, model_class, types, ip_address):

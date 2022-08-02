@@ -16,19 +16,29 @@ class DomainMailSPFDMARC(Analyzer):
 
         if 'error' in raw['DomainMailSPFDMARC']['dmarc']:
             if 'error' in raw['DomainMailSPFDMARC']['spf']:
-                taxonomies.append(self.build_taxonomy("malicious", namespace,"DMARC","no"))
-                taxonomies.append(self.build_taxonomy("malicious", namespace,"SPF","no"))
+                taxonomies.extend(
+                    (
+                        self.build_taxonomy("malicious", namespace, "DMARC", "no"),
+                        self.build_taxonomy("malicious", namespace, "SPF", "no"),
+                    )
+                )
+
             else:
-                taxonomies.append(self.build_taxonomy("safe", namespace,"SPF","yes"))
-                taxonomies.append(self.build_taxonomy("suspicious", namespace,"DMARC","no"))
+                taxonomies.extend(
+                    (
+                        self.build_taxonomy("safe", namespace, "SPF", "yes"),
+                        self.build_taxonomy(
+                            "suspicious", namespace, "DMARC", "no"
+                        ),
+                    )
+                )
+
         else:
             if 'error' in raw['DomainMailSPFDMARC']['spf']:
                 taxonomies.append(self.build_taxonomy("suspicious", namespace,"SPF","no"))
-                taxonomies.append(self.build_taxonomy("safe", namespace,"DMARC","yes"))
             else:
                 taxonomies.append(self.build_taxonomy("safe", namespace,"SPF","yes"))
-                taxonomies.append(self.build_taxonomy("safe", namespace,"DMARC","yes"))
-        
+            taxonomies.append(self.build_taxonomy("safe", namespace,"DMARC","yes"))
         return {'taxonomies': taxonomies}
         
     def get_info(self, data):
@@ -39,7 +49,7 @@ class DomainMailSPFDMARC(Analyzer):
         return {"DomainMailSPFDMARC": dict(result)}
 
     def run(self):
-        if self.data_type == 'domain' or self.data_type == 'fqdn':
+        if self.data_type in ['domain', 'fqdn']:
             self.report(self.get_info(self.get_data()))
         else:
             self.error('Data type not supported. Please use this analyzer with data types domain or fqdn.')

@@ -15,22 +15,21 @@ class GRRAnalyzer(Analyzer):
         self.grrapi = api.InitHttp(api_endpoint=self.grr_url, auth=(self.grr_user, self.grr_passwd))
 
     def summary(self, raw):
-        taxonomies = []
         level = 'info'
         namespace = 'GRR'
         predicate = 'Client id'
-        
-        for client_id in raw['results']:
-            taxonomies.append(self.build_taxonomy(level, namespace, predicate, client_id))
+
+        taxonomies = [
+            self.build_taxonomy(level, namespace, predicate, client_id)
+            for client_id in raw['results']
+        ]
 
         return {"taxonomies": taxonomies}
 
     def run(self):
-        if self.data_type == 'ip' or self.data_type == 'fqdn':
+        if self.data_type in ['ip', 'fqdn']:
             search_result = self.grrapi.SearchClients(self.get_data())
-            result = []
-            for client in search_result:
-                result.append(client.client_id)
+            result = [client.client_id for client in search_result]
             self.report({'results': result})
         else:
             self.error('Invalid data type')

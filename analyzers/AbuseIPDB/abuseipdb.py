@@ -48,12 +48,17 @@ class AbuseIPDBAnalyzer(Analyzer):
                 ip = self.get_data()
 
                 url = 'https://api.abuseipdb.com/api/v2/check'
-                headers = {'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded', 'Key': '%s' % api_key }
+                headers = {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Key': f'{api_key}',
+                }
+
                 params = {'maxAgeInDays': days_to_check, 'verbose': 'True', 'ipAddress': ip}
                 response = requests.get(url, headers = headers, params = params)
 
                 if not (200 <= response.status_code < 300):
-                    self.error('Unable to query AbuseIPDB API\n{}'.format(response.text))
+                    self.error(f'Unable to query AbuseIPDB API\n{response.text}')
 
                 json_response = response.json()
                 # this is because in case there's only one result, the api gives back a list instead of a dict

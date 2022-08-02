@@ -12,22 +12,14 @@ class EmailRepAnalyzer(Analyzer):
 
 
     def summary(self, raw):
-        taxonomies = []
         level = "info"
         namespace = "EmailRep"
 
         suspicious = raw.get("suspicious", False)
-        if suspicious:
-            level = "suspicious"
-        else:
-            level = "safe"
-
+        level = "suspicious" if suspicious else "safe"
         references = raw.get("references", 0)
 
-        taxonomies.append(
-            self.build_taxonomy(level, namespace, "References", references)
-        )
-
+        taxonomies = [self.build_taxonomy(level, namespace, "References", references)]
         return {"taxonomies": taxonomies}
 
     def run(self):

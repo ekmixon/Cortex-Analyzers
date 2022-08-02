@@ -28,11 +28,10 @@ class PESubmodule(SubmoduleBaseclass):
     def pe_machine(pedict):
         if pedict:
             machinetype = pedict.get("FILE_HEADER").get("Machine").get("Value")
+            if type(machinetype) is not int:
+                return f"{str(machinetype)} => Not x86/64 or Itanium"
             mt = {"0x14c": "x86", "0x0200": "Itanium", "0x8664": "x64"}
-            if type(machinetype) is int:
-                return mt[str(hex(machinetype))]
-            else:
-                return str(machinetype) + " => Not x86/64 or Itanium"
+            return mt[hex(machinetype)]
 
     @staticmethod
     def pe_type(pe):
@@ -67,18 +66,18 @@ class PESubmodule(SubmoduleBaseclass):
 
     def pe_info(self, pe):
         pedict = pe.dump_dict()
-        table = []
         if hasattr(pe, "FileInfo"):
+            table = []
             for fileinfo in pe.FileInfo:
                 if (
                     hasattr(fileinfo, "Key")
                     and fileinfo.Key.decode() == "StringFileInfo"
                 ):
                     for stringtable in fileinfo.StringTable:
-                        for entry in stringtable.entries.items():
-                            table.append(
-                                {"Info": entry[0].decode(), "Value": entry[1].decode()}
-                            )
+                        table.extend(
+                            {"Info": entry[0].decode(), "Value": entry[1].decode()}
+                            for entry in stringtable.entries.items()
+                        )
 
             table.append(
                 {
@@ -133,7 +132,7 @@ class PESubmodule(SubmoduleBaseclass):
         try:
             pe = pefile.PE(path)
         except Exception:
-            return "Failed processing {}".format(path)
+            return f"Failed processing {path}"
 
         self.add_result_subsection("Headers", self.pe_info(pe))
         self.add_result_subsection(

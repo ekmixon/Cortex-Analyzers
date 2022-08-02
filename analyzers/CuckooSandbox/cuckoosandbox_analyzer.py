@@ -12,7 +12,7 @@ class CuckooSandboxAnalyzer(Analyzer):
     def __init__(self):
         Analyzer.__init__(self)
         self.url = self.get_param('config.url', None, 'CuckooSandbox url is missing')
-        self.url = self.url + "/" if not self.url.endswith("/") else self.url
+        self.url = self.url if self.url.endswith("/") else f"{self.url}/"
         self.token = self.get_param('config.token', None, None)
         # self.analysistimeout = self.get_param('config.analysistimeout', 30*60, None)
         # self.networktimeout = self.get_param('config.networktimeout', 30, None)
@@ -22,18 +22,18 @@ class CuckooSandboxAnalyzer(Analyzer):
             requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
     def summary(self, raw):
-        taxonomies = []
         level = "safe"
         namespace = "Cuckoo"
         predicate = "Malscore"
         value = "0"
 
         result = {
-            'service': self.data_type + '_analysis',
+            'service': f'{self.data_type}_analysis',
             'dataType': self.data_type,
             'malscore': raw.get('malscore', None),
-            'malfamily': raw.get('malfamily', None)
+            'malfamily': raw.get('malfamily', None),
         }
+
 
         if result["malscore"] > 6.5:
             level = "malicious"
@@ -42,8 +42,14 @@ class CuckooSandboxAnalyzer(Analyzer):
         elif result["malscore"] > 0:
             level = "safe"
 
-        taxonomies.append(self.build_taxonomy(level, namespace, predicate, "{}".format(result["malscore"])))
-        taxonomies.append(self.build_taxonomy(level, namespace, "Malfamily", "{}".format(result["malfamily"])))
+        taxonomies = [
+            self.build_taxonomy(
+                level, namespace, predicate, f'{result["malscore"]}'
+            ),
+            self.build_taxonomy(
+                level, namespace, "Malfamily", f'{result["malfamily"]}'
+            ),
+        ]
 
         return {"taxonomies": taxonomies}
 
@@ -51,7 +57,7 @@ class CuckooSandboxAnalyzer(Analyzer):
         Analyzer.run(self)
 
         try:
-            headers = dict()
+            headers = {}
             if self.token and self.token != "":
                 headers['Authorization'] = "Bearer {0}".format(self.token)
 
@@ -61,7 +67,13 @@ class CuckooSandboxAnalyzer(Analyzer):
                 filename = self.get_param('filename', basename(filepath))
                 with open(filepath, "rb") as sample:
                     files = {"file": (filename, sample)}
-                    response = requests.post(self.url + 'tasks/create/file', files=files, headers=headers, verify=self.verify_ssl)
+                    response = requests.post(
+                        f'{self.url}tasks/create/file',
+                        files=files,
+                        headers=headers,
+                        verify=self.verify_ssl,
+                    )
+
                 if 'task_ids' in response.json().keys():
                     task_id = response.json()['task_ids'][0]
                 elif 'task_id' in response.json().keys():
@@ -71,10 +83,15 @@ class CuckooSandboxAnalyzer(Analyzer):
                 else:
                     self.error(response.json()['message'])
 
-            # url analysis
             elif self.data_type == 'url':
                 data = {"url": self.get_data()}
-                response = requests.post(self.url + 'tasks/create/url', data=data, headers=headers, verify=self.verify_ssl)
+                response = requests.post(
+                    f'{self.url}tasks/create/url',
+                    data=data,
+                    headers=headers,
+                    verify=self.verify_ssl,
+                )
+
                 if 'task_id' in response.json().keys():
                     task_id = response.json()['task_id']
                 elif response.status_code == 401:
@@ -89,7 +106,12 @@ class CuckooSandboxAnalyzer(Analyzer):
             tries = 0
             while not finished and tries <= 15:  # wait max 15 mins
                 time.sleep(60)
-                response = requests.get(self.url + 'tasks/view/' + str(task_id), headers=headers, verify=self.verify_ssl)
+                response = requests.get(
+                    f'{self.url}tasks/view/{str(task_id)}',
+                    headers=headers,
+                    verify=self.verify_ssl,
+                )
+
                 content = response.json()['task']['status']
                 if content == 'reported':
                     finished = True
@@ -98,7 +120,12 @@ class CuckooSandboxAnalyzer(Analyzer):
                 self.error('CuckooSandbox analysis timed out')
 
             # Download the report
-            response = requests.get(self.url + 'tasks/report/' + str(task_id) + '/json', headers=headers, verify=self.verify_ssl)
+            response = requests.get(
+                f'{self.url}tasks/report/{str(task_id)}/json',
+                headers=headers,
+                verify=self.verify_ssl,
+            )
+
             resp_json = response.json()
             list_description = [x['description'] for x in resp_json['signatures']]
             if 'suricata' in resp_json.keys() and 'alerts' in resp_json['suricata'].keys():
@@ -127,7 +154,12 @@ class CuckooSandboxAnalyzer(Analyzer):
                 domains = [(x['ip'], x['domain']) for x in
                          resp_json['network']['domains']] if 'domains' in resp_json['network'].keys() else None
             except TypeError as e:
-                domains = [x for x in resp_json['network']['domains']] if 'domains' in resp_json['network'].keys() else []
+                domains = (
+                    list(resp_json['network']['domains'])
+                    if 'domains' in resp_json['network'].keys()
+                    else []
+                )
+
             uri = [(x['uri']) for x in resp_json['network']['http']] if 'http' in resp_json['network'].keys() else []
             if self.data_type == 'url':
                 self.report({
@@ -144,20 +176,29 @@ class CuckooSandboxAnalyzer(Analyzer):
                         'target'].keys() else '-'
                 })
             else:
-                self.report({
-                    'signatures': list_description,
-                    'suricata_alerts': suri_alerts,
-                    'snort_alerts': snort_alerts,
-                    'domains': domains,
-                    'uri': uri,
-                    'malscore': resp_json['malscore'] if 'malscore' in resp_json.keys() else resp_json['info'].get(
-                        'score', None),
-                    'malfamily': resp_json.get('malfamily', None),
-                    'file_type': "".join([x for x in resp_json['target']['file']['type']]),
-                    'yara': [
-                        x['name'] + " - " + x['meta']['description'] if 'description' in x['meta'].keys() else x['name']
-                        for x in resp_json['target']['file']['yara']]
-                })
+                self.report(
+                    {
+                        'signatures': list_description,
+                        'suricata_alerts': suri_alerts,
+                        'snort_alerts': snort_alerts,
+                        'domains': domains,
+                        'uri': uri,
+                        'malscore': resp_json['malscore']
+                        if 'malscore' in resp_json.keys()
+                        else resp_json['info'].get('score', None),
+                        'malfamily': resp_json.get('malfamily', None),
+                        'file_type': "".join(
+                            list(resp_json['target']['file']['type'])
+                        ),
+                        'yara': [
+                            x['name'] + " - " + x['meta']['description']
+                            if 'description' in x['meta'].keys()
+                            else x['name']
+                            for x in resp_json['target']['file']['yara']
+                        ],
+                    }
+                )
+
 
         except requests.exceptions.RequestException as e:
             self.error(str(e))
